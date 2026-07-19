@@ -181,6 +181,38 @@ function ImpactCameraRig({ view, targetDistanceYd, carryYd }: { view: ImpactView
   return null;
 }
 
+function pathBounds(points: readonly (readonly [number, number, number])[]) {
+  const xs = points.map((point) => point[0]);
+  const zs = points.map((point) => point[2]);
+  const minX = Math.min(...xs, 0);
+  const maxX = Math.max(...xs, 0);
+  const minZ = Math.min(...zs, 0);
+  const maxZ = Math.max(...zs, 0);
+  return {
+    center: [(minX + maxX) / 2, (minZ + maxZ) / 2] as [number, number],
+    span: Math.max(maxX - minX, maxZ - minZ),
+  };
+}
+
+function GreenCameraRig({ points }: { points: readonly (readonly [number, number, number])[] }) {
+  const { camera } = useThree();
+  const config = useMemo(() => {
+    const bounds = pathBounds(points.length ? points : [[0, 0, 0]]);
+    const paddedSpan = Math.max(15, bounds.span * 1.28);
+    return {
+      position: [bounds.center[0], Math.max(13, paddedSpan * 0.82), bounds.center[1] - Math.max(15, paddedSpan * 0.52)] as [number, number, number],
+      target: [bounds.center[0], 0, bounds.center[1]] as [number, number, number],
+    };
+  }, [points]);
+  useEffect(() => {
+    camera.position.set(...config.position);
+    camera.up.set(0, 1, 0);
+    camera.lookAt(...config.target);
+    camera.updateProjectionMatrix();
+  }, [camera, config]);
+  return null;
+}
+
 function ImpactScene() {
   const inputs = useLabStore((state) => state.impactInputs);
   const impactView = useLabStore((state) => state.impactView);
@@ -500,13 +532,19 @@ function FlightPathIcon({ height, curve }: Pick<FlightPreset, 'height' | 'curve'
 function GreenScene() {
   const inputs = useLabStore((state) => state.greenInputs);
   const result = useMemo(() => simulateGreen(inputs), [inputs]);
-  const points = result.points.filter((_, index) => index % 8 === 0).map((point) => [point.position[0] * greenScale, 0.13, point.position[1] * greenScale] as [number, number, number]);
-  const rolloutPoints = result.rolloutPoints.filter((_, index) => index % 8 === 0).map((point) => [point.position[0] * greenScale, 0.135, point.position[1] * greenScale] as [number, number, number]);
-  const leavePoint = [result.leave.position[0] * greenScale, 0.16, result.leave.position[1] * greenScale] as [number, number, number];
-  const secondPuttPoints = result.leave.distanceFt > 0.4 ? [leavePoint, [0, 0.16, 0] as [number, number, number]] : [];
+  const points = useMemo(() => result.points.filter((_, index) => index % 8 === 0).map((point) => [point.position[0] * greenScale, 0.13, point.position[1] * greenScale] as [number, number, number]), [result.points]);
+  const rolloutPoints = useMemo(() => result.rolloutPoints.filter((_, index) => index % 8 === 0).map((point) => [point.position[0] * greenScale, 0.135, point.position[1] * greenScale] as [number, number, number]), [result.rolloutPoints]);
+  const leavePoint = useMemo(() => [result.leave.position[0] * greenScale, 0.16, result.leave.position[1] * greenScale] as [number, number, number], [result.leave.position]);
+  const secondPuttPoints = useMemo(() => result.leave.distanceFt > 0.4 ? [leavePoint, [0, 0.16, 0] as [number, number, number]] : [], [leavePoint, result.leave.distanceFt]);
+  const cameraPoints = useMemo(() => [...points, ...rolloutPoints, ...secondPuttPoints], [points, rolloutPoints, secondPuttPoints]);
+  const cameraTarget = useMemo(() => {
+    const bounds = pathBounds(cameraPoints);
+    return [bounds.center[0], 0, bounds.center[1]] as [number, number, number];
+  }, [cameraPoints]);
   const startZ = -inputs.distanceFt * ftToScene;
   return (
     <>
+      <GreenCameraRig points={cameraPoints} />
       <ambientLight intensity={0.9} />
       <directionalLight position={[-3, 6, 4]} intensity={1.4} />
       <mesh rotation-x={-Math.PI / 2}>
@@ -542,7 +580,7 @@ function GreenScene() {
         <sphereGeometry args={[0.18, 24, 12]} />
         <meshStandardMaterial color="#f7f1e3" roughness={0.48} />
       </mesh>
-      <OrbitControls makeDefault enablePan={false} maxPolarAngle={Math.PI / 2.08} />
+      <OrbitControls makeDefault enablePan={false} target={cameraTarget} maxPolarAngle={Math.PI / 2.08} />
     </>
   );
 }
