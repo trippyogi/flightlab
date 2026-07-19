@@ -242,7 +242,7 @@ function GreenReadingMap({ distanceFt, slopePercent, slopeDirectionDeg, aimDeg }
     const cols = [-7, 0, 7];
     return rows.flatMap((z) => cols.map((x) => [x, z] as const));
   }, []);
-  const aimRotationY = aimDeg * Math.PI / 180;
+  const aimRotationY = -aimDeg * Math.PI / 180;
   const startZ = -distanceFt * ftToScene;
   return (
     <group position={[0, 0.075, 0]}>
@@ -441,7 +441,7 @@ function GreenPanel() {
   const setGreenInput = useLabStore((state) => state.setGreenInput);
   const result = useMemo(() => simulateGreen(inputs), [inputs]);
   const manifest = modules.find((module) => module.id === 'green')!;
-  const breakSide = result.breakFt > 0.05 ? 'right' : result.breakFt < -0.05 ? 'left' : 'center';
+  const breakSide = result.breakFt < -0.05 ? 'right' : result.breakFt > 0.05 ? 'left' : 'center';
   return (
     <aside className="panel">
       <Slider label="Distance" value={inputs.distanceFt} min={4} max={40} step={1} unit=" ft" onChange={(v) => setGreenInput('distanceFt', v)} />

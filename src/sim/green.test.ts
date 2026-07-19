@@ -24,6 +24,19 @@ describe('simulateGreen', () => {
     expect(result.lipSpeedMs).toBeLessThan(1.45);
   });
 
+  it('maps positive aim to golfer-right', () => {
+    const result = simulateGreen({
+      distanceFt: 12,
+      slopePercent: 0,
+      slopeDirectionDeg: 90,
+      stimp: 10,
+      aimDeg: 5,
+      pacePastFt: 1.4,
+    });
+
+    expect(result.points[1].position[0]).toBeLessThan(0);
+  });
+
   it('breaks more on faster greens', () => {
     const slow = simulateGreen({
       distanceFt: 12,

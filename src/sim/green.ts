@@ -53,7 +53,7 @@ export function simulateGreen(inputs: GreenInputs): GreenResult {
   const slopeAccel = (5 / 7) * g * (inputs.slopePercent / 100);
   const gravity: Vec2 = [Math.sin(fall) * slopeAccel, Math.cos(fall) * slopeAccel];
   let position: Vec2 = start;
-  let velocity: Vec2 = [Math.sin(aim) * initialSpeed, Math.cos(aim) * initialSpeed];
+  let velocity: Vec2 = [-Math.sin(aim) * initialSpeed, Math.cos(aim) * initialSpeed];
   const points: RollPoint[] = [{ t: 0, position, velocity }];
   let closest = Number.POSITIVE_INFINITY;
   let lipSpeedMs = 0;
