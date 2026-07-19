@@ -147,7 +147,7 @@ function impactCameraConfig(view: ImpactView, targetDistanceYd: number, carryYd:
   const midZ = shotDepth * 0.5;
   if (view === 'top') {
     return {
-      position: [0, Math.max(92, shotDepth * 1.28), midZ] as [number, number, number],
+      position: [0, Math.max(128, shotDepth * 1.78), midZ] as [number, number, number],
       target: [0, 0, midZ] as [number, number, number],
       up: [0, 0, -1] as [number, number, number],
       maxPolar: 0.08,
@@ -304,7 +304,7 @@ function ImpactScene() {
       <Text position={[result.offlineYd * impactLateralScale, 10, Math.min(85, result.carryYd * 0.55)]} rotation-y={Math.PI} fontSize={2.8} color="#f5f0e4">
         {namedFlight(inputs)}
       </Text>
-      <OrbitControls makeDefault enablePan={false} target={cameraView.target} maxPolarAngle={cameraView.maxPolar} />
+      {impactView === 'top' ? null : <OrbitControls makeDefault enablePan={false} target={cameraView.target} maxPolarAngle={cameraView.maxPolar} />}
     </>
   );
 }
