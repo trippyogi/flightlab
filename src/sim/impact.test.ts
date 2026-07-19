@@ -46,6 +46,26 @@ describe('simulateImpact', () => {
     expect(fade.spinRpm).toBeCloseTo(6350, -2);
   });
 
+  it('separates start line from face-to-path curve', () => {
+    const pushDraw = simulateImpact({
+      club: 'Driver',
+      handedness: 'right',
+      holePar: 'par4',
+      targetDistanceYd: 440,
+      clubSpeedMph: 113,
+      attackAngleDeg: 2,
+      clubPathDeg: 3.5,
+      faceAngleDeg: 1.5,
+      dynamicLoftDeg: 12,
+      strikeX: 0,
+      strikeY: 0,
+    });
+
+    expect(pushDraw.startLineDeg).toBeGreaterThan(0);
+    expect(pushDraw.faceToPathDeg).toBeLessThan(0);
+    expect(pushDraw.spinAxisDeg).toBeLessThan(0);
+  });
+
   it('names the teaching-flight families from face and path', () => {
     const base: ImpactInputs = {
       club: 'Driver',
@@ -62,8 +82,8 @@ describe('simulateImpact', () => {
     };
 
     expect(namedFlight(base)).toBe('straight');
-    expect(namedFlight({ ...base, faceAngleDeg: -4, clubPathDeg: 7 })).toBe('push-draw');
-    expect(namedFlight({ ...base, faceAngleDeg: 4, clubPathDeg: -7 })).toBe('pull-fade');
-    expect(namedFlight({ ...base, handedness: 'left', faceAngleDeg: 4, clubPathDeg: -7 })).toBe('push-draw');
+    expect(namedFlight({ ...base, faceAngleDeg: 4, clubPathDeg: 7 })).toBe('push-draw');
+    expect(namedFlight({ ...base, faceAngleDeg: -4, clubPathDeg: -7 })).toBe('pull-fade');
+    expect(namedFlight({ ...base, handedness: 'left', faceAngleDeg: -4, clubPathDeg: -7 })).toBe('push-draw');
   });
 });

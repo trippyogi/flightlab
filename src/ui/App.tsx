@@ -44,9 +44,15 @@ const flightPresets: FlightPreset[] = [
 
 function curveAngles(curve: FlightPreset['curve'], handedness: Handedness) {
   const side = handedness === 'left' ? -1 : 1;
-  if (curve === 'draw') return { faceAngleDeg: -1.5 * side, clubPathDeg: 3.5 * side };
-  if (curve === 'fade') return { faceAngleDeg: 1.5 * side, clubPathDeg: -3.5 * side };
+  if (curve === 'draw') return { faceAngleDeg: 1.5 * side, clubPathDeg: 3.5 * side };
+  if (curve === 'fade') return { faceAngleDeg: -1.5 * side, clubPathDeg: -3.5 * side };
   return { faceAngleDeg: 0, clubPathDeg: 0 };
+}
+
+function directionalLabel(degrees: number, handedness: Handedness, positiveLabel: string, negativeLabel: string) {
+  const relative = degrees * (handedness === 'left' ? -1 : 1);
+  if (Math.abs(relative) < 0.4) return 'neutral';
+  return relative > 0 ? positiveLabel : negativeLabel;
 }
 
 function ModuleRail() {
@@ -345,7 +351,7 @@ function ImpactPanel() {
       <Slider label="Club speed" value={inputs.clubSpeedMph} min={60} max={125} unit=" mph" onChange={(v) => setImpactInput('clubSpeedMph', v)} />
       <Slider label="Attack" value={inputs.attackAngleDeg} min={-8} max={6} step={0.5} unit=" deg" onChange={(v) => setImpactInput('attackAngleDeg', v)} />
       <Slider label="Path" value={inputs.clubPathDeg} min={-8} max={8} step={0.5} unit=" deg" onChange={(v) => setImpactInput('clubPathDeg', v)} />
-      <Slider label="Face" value={-inputs.faceAngleDeg} min={-8} max={8} step={0.5} unit=" deg" onChange={(v) => setImpactInput('faceAngleDeg', -v)} />
+      <Slider label="Face" value={inputs.faceAngleDeg} min={-8} max={8} step={0.5} unit=" deg" onChange={(v) => setImpactInput('faceAngleDeg', v)} />
       <Slider label="Launch" value={result.launchAngleDeg} min={4} max={38} step={0.5} unit=" deg" onChange={setLaunchAngle} />
       <Slider label="Toe / heel" value={inputs.strikeX} min={-2} max={2} step={0.1} onChange={(v) => setImpactInput('strikeX', v)} />
       <div className="quick-grid">
@@ -370,6 +376,9 @@ function ImpactPanel() {
       </button>
       <div className="readouts" aria-live="polite">
         <Readout label="Ball speed" value={`${nf.format(result.ballSpeedMph)} mph`} receipt={result.receipts.launch} />
+        <Readout label="Start line" value={`${nf.format(result.startLineDeg)} deg ${directionalLabel(result.startLineDeg, inputs.handedness, 'push', 'pull')}`} receipt="Start line is launch direction: mostly face angle, with a smaller path contribution. Positive is right of target for right-handed mode and mirrored for left-handed mode." />
+        <Readout label="Curve" value={directionalLabel(result.curveBiasDeg, inputs.handedness, 'fade', 'draw')} receipt="Curve comes from face-to-path. Face left of path creates draw spin; face right of path creates fade spin. Handedness mirrors the label." />
+        <Readout label="Face to path" value={`${nf.format(result.faceToPathDeg)} deg`} receipt={result.receipts.dPlane} />
         <Readout label="Launch" value={`${nf.format(result.launchAngleDeg)} deg`} receipt="Launch angle is exposed as the player-facing control; internally it solves dynamic loft from launch = dynamic loft * 0.62 + attack * 0.18 + strike height." />
         <Readout label="Spin loft" value={`${nf.format(spinLoftDeg)} deg`} receipt="Spin loft = dynamic loft - attack angle. More spin loft raises spin and usually lowers smash." />
         <Readout label="Spin" value={`${Math.round(result.spinRpm)} rpm`} receipt={result.receipts.spin} />
