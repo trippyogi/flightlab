@@ -237,10 +237,11 @@ function ImpactScene() {
   const cameraView = useMemo(() => impactCameraConfig(impactView, inputs.targetDistanceYd, result.carryYd, result.apexYd), [impactView, inputs.targetDistanceYd, result.carryYd, result.apexYd]);
   const flightLabel = activeFlightPreset(inputs)?.label ?? namedFlight(inputs);
   const sceneTextRotationY = impactView === 'top' ? 0 : Math.PI;
+  const visualLateralScale = impactView === 'top' ? Math.abs(impactLateralScale) : impactLateralScale;
   const sampled = result.points.filter((_, index) => index % 20 === 0).map((point) => point.position);
   const targetZ = inputs.targetDistanceYd * ydToImpactScene;
   const carryZ = result.carryYd * ydToImpactScene;
-  const landingX = result.offlineYd * impactLateralScale;
+  const landingX = result.offlineYd * visualLateralScale;
   const dispersionWidthYd = Math.round(Math.max(16, result.carryYd * (inputs.club === 'Driver' ? 0.12 : inputs.club === '6-iron' ? 0.09 : 0.07)));
   const dispersionHalfX = (dispersionWidthYd / 2) * Math.abs(impactLateralScale);
   const dispersionDepth = Math.max(9, result.carryYd * 0.045) * ydToImpactScene;
@@ -312,9 +313,9 @@ function ImpactScene() {
         <meshStandardMaterial color="#2a3128" transparent opacity={0.42} roughness={0.82} />
       </mesh>
       {ghosts.map((ghost, index) => (
-        <Trajectory key={ghost.id} points={ghost.points} color="#ece4d3" opacity={0.26 - index * 0.025} scale={ydToImpactScene} lateralScale={impactLateralScale} width={2.6} />
+        <Trajectory key={ghost.id} points={ghost.points} color="#ece4d3" opacity={0.26 - index * 0.025} scale={ydToImpactScene} lateralScale={visualLateralScale} width={2.6} />
       ))}
-      <Trajectory points={sampled} color="#e86f23" opacity={0.98} scale={ydToImpactScene} lateralScale={impactLateralScale} width={5.2} />
+      <Trajectory points={sampled} color="#e86f23" opacity={0.98} scale={ydToImpactScene} lateralScale={visualLateralScale} width={5.2} />
       <mesh position={[landingX, 0.12, carryZ]} rotation-x={-Math.PI / 2} scale={[dispersionHalfX, dispersionDepth, 1]}>
         <ringGeometry args={[0.9, 1, 72]} />
         <meshBasicMaterial color="#f8efd9" transparent opacity={0.78} />
@@ -331,7 +332,7 @@ function ImpactScene() {
       <Text position={[0, 1.2, targetZ]} rotation-y={sceneTextRotationY} fontSize={1.55} color="#f8efd9">
         {inputs.holePar.replace('par', 'Par ')} · {inputs.targetDistanceYd} yd
       </Text>
-      <Text position={[result.offlineYd * impactLateralScale, 10, Math.min(85, result.carryYd * 0.55)]} rotation-y={sceneTextRotationY} fontSize={2.8} color="#f5f0e4">
+      <Text position={[result.offlineYd * visualLateralScale, 10, Math.min(85, result.carryYd * 0.55)]} rotation-y={sceneTextRotationY} fontSize={2.8} color="#f5f0e4">
         {flightLabel}
       </Text>
       {impactView === 'top' ? null : <OrbitControls makeDefault enablePan={false} target={cameraView.target} maxPolarAngle={cameraView.maxPolar} />}

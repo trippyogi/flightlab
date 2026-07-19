@@ -111,7 +111,7 @@ export function simulateImpact(rawInputs: ImpactInputs): ImpactResult {
   const spinRpm = Math.max(900, params.spinK * inputs.clubSpeedMph * Math.sin(degToRad(spinLoft)) * gearSpin);
   const dPlaneNormal = norm3(cross3(path, faceNormal));
   const rawAxis = radToDeg(Math.atan2(dPlaneNormal[0], Math.max(0.0001, Math.abs(dPlaneNormal[1]))));
-  const spinAxisDeg = clamp(rawAxis * 0.02 + faceToPathDeg * 3.2 - inputs.strikeX * 7.5, -45, 45);
+  const spinAxisDeg = clamp(rawAxis * 0.02 + faceToPathDeg * 14 - inputs.strikeX * 7.5, -45, 45);
   const launch = vectorFromAzimuthElevation(launchDir, launchAngle);
   let position: Vec3 = [0, 0.02, 0];
   let velocity = scale3(launch, ballSpeedMph * mphToMs);

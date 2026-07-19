@@ -89,9 +89,11 @@ describe('simulateImpact', () => {
     expect(draw.faceToPathDeg).toBeLessThan(0);
     expect(draw.startLineDeg).toBeGreaterThan(0);
     expect(draw.offlineYd).toBeLessThan(drawStartLineYd);
+    expect(drawStartLineYd - draw.offlineYd).toBeGreaterThan(5);
     expect(fade.faceToPathDeg).toBeGreaterThan(0);
     expect(fade.startLineDeg).toBeLessThan(0);
     expect(fade.offlineYd).toBeGreaterThan(fadeStartLineYd);
+    expect(fade.offlineYd - fadeStartLineYd).toBeGreaterThan(5);
   });
 
   it('names the teaching-flight families from face and path', () => {
