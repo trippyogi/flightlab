@@ -78,4 +78,20 @@ describe('simulateGreen', () => {
 
     expect(firm.captureRadiusM).toBeLessThan(dying.captureRadiusM);
   });
+
+  it('keeps rollout data after a captured putt', () => {
+    const result = simulateGreen({
+      distanceFt: 12,
+      slopePercent: 0,
+      slopeDirectionDeg: 90,
+      stimp: 10,
+      aimDeg: 0,
+      pacePastFt: 2,
+    });
+
+    expect(result.made).toBe(true);
+    expect(result.points.at(-1)?.position).toEqual([0, 0]);
+    expect(result.rolloutPoints.length).toBeGreaterThan(2);
+    expect(result.stopPastFt).toBeGreaterThan(0);
+  });
 });

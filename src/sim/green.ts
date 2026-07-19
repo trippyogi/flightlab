@@ -1,4 +1,4 @@
-import { clamp, degToRad, mag3, type Vec2 } from './vector';
+import { clamp, degToRad, type Vec2 } from './vector';
 
 export type GreenInputs = {
   distanceFt: number;
@@ -17,6 +17,7 @@ export type RollPoint = {
 
 export type GreenResult = {
   points: RollPoint[];
+  rolloutPoints: RollPoint[];
   lipSpeedMs: number;
   captureRadiusM: number;
   missDistanceM: number;
@@ -55,6 +56,7 @@ export function simulateGreen(inputs: GreenInputs): GreenResult {
   let position: Vec2 = start;
   let velocity: Vec2 = [-Math.sin(aim) * initialSpeed, Math.cos(aim) * initialSpeed];
   const points: RollPoint[] = [{ t: 0, position, velocity }];
+  const rolloutPoints: RollPoint[] = [];
   let closest = Number.POSITIVE_INFINITY;
   let lipSpeedMs = 0;
   let made = false;
@@ -72,19 +74,26 @@ export function simulateGreen(inputs: GreenInputs): GreenResult {
       closest = distanceToCup;
       lipSpeedMs = Math.hypot(velocity[0], velocity[1]);
     }
-    if (distanceToCup <= captureRadius(Math.hypot(velocity[0], velocity[1]))) {
+    if (!made && distanceToCup <= captureRadius(Math.hypot(velocity[0], velocity[1]))) {
       made = true;
       lipSpeedMs = Math.hypot(velocity[0], velocity[1]);
       points.push({ t: i * dt, position: target, velocity: [0, 0] });
-      break;
+      rolloutPoints.push({ t: i * dt, position: target, velocity }, { t: i * dt, position, velocity });
+      continue;
     }
-    points.push({ t: i * dt, position, velocity });
+    if (made) {
+      rolloutPoints.push({ t: i * dt, position, velocity });
+    } else {
+      points.push({ t: i * dt, position, velocity });
+    }
   }
   const last = points[points.length - 1];
+  const rolloutLast = rolloutPoints[rolloutPoints.length - 1] ?? last;
   const lineBreak = last.position[0] / ftToM;
-  const stopPastFt = mag3([last.position[0], 0, last.position[1]]) / ftToM - inputs.distanceFt;
+  const stopPastFt = rolloutLast.position[1] / ftToM;
   return {
     points,
+    rolloutPoints,
     lipSpeedMs,
     captureRadiusM: captureRadius(lipSpeedMs),
     missDistanceM: closest,

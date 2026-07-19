@@ -207,10 +207,26 @@ function ImpactScene() {
   );
 }
 
-function Trajectory({ points, color, opacity, scale = 0.15, lateralScale = scale, width = 4 }: { points: readonly (readonly [number, number, number])[]; color: string; opacity: number; scale?: number; lateralScale?: number; width?: number }) {
+function Trajectory({
+  points,
+  color,
+  opacity,
+  scale = 0.15,
+  lateralScale = scale,
+  width = 4,
+  dashed = false,
+}: {
+  points: readonly (readonly [number, number, number])[];
+  color: string;
+  opacity: number;
+  scale?: number;
+  lateralScale?: number;
+  width?: number;
+  dashed?: boolean;
+}) {
   const scaled = useMemo(() => points.map((point) => [point[0] * lateralScale, point[1] * scale, point[2] * scale] as [number, number, number]), [points, scale, lateralScale]);
   return (
-    <Line points={scaled} color={color} lineWidth={width} transparent opacity={opacity} />
+    <Line points={scaled} color={color} lineWidth={width} transparent opacity={opacity} dashed={dashed} dashSize={0.42} gapSize={0.24} />
   );
 }
 
@@ -411,6 +427,7 @@ function GreenScene() {
   const inputs = useLabStore((state) => state.greenInputs);
   const result = useMemo(() => simulateGreen(inputs), [inputs]);
   const points = result.points.filter((_, index) => index % 8 === 0).map((point) => [point.position[0] * greenScale, 0.13, point.position[1] * greenScale] as [number, number, number]);
+  const rolloutPoints = result.rolloutPoints.filter((_, index) => index % 8 === 0).map((point) => [point.position[0] * greenScale, 0.135, point.position[1] * greenScale] as [number, number, number]);
   const startZ = -inputs.distanceFt * ftToScene;
   return (
     <>
@@ -431,6 +448,7 @@ function GreenScene() {
         <meshBasicMaterial color="#171c17" />
       </mesh>
       <Trajectory points={points} color="#e86f23" opacity={0.98} scale={1} width={5} />
+      {result.made && rolloutPoints.length > 1 ? <Trajectory points={rolloutPoints} color="#f8efd9" opacity={0.78} scale={1} width={3.6} dashed /> : null}
       <line>
         <bufferGeometry>
           <bufferAttribute attach="attributes-position" args={[new Float32Array([0, 0.11, startZ, 0, 0.11, 0]), 3]} />
