@@ -80,22 +80,22 @@ function ImpactScene() {
       <directionalLight position={[4, 8, 5]} intensity={1.6} />
       <mesh rotation-x={-Math.PI / 2} position={[0, -0.02, 115]}>
         <planeGeometry args={[90, 260]} />
-        <meshStandardMaterial color="#7f987e" roughness={0.9} />
+        <meshStandardMaterial color="#6f8468" roughness={0.92} metalness={0.02} />
       </mesh>
-      <gridHelper args={[90, 18, '#edf1ea', '#aab4a5']} position={[0, 0, 115]} />
+      <gridHelper args={[90, 18, '#f5f0e4', '#9aaa91']} position={[0, 0, 115]} />
       <mesh position={[0, 0.25, 0]}>
         <sphereGeometry args={[0.32, 32, 16]} />
-        <meshStandardMaterial color="#f8f7ef" roughness={0.5} />
+        <meshStandardMaterial color="#f7f1e3" roughness={0.46} />
       </mesh>
       <mesh position={[inputs.strikeX * 0.25, 0.8 + inputs.strikeY * 0.1, -1.1]} rotation-y={inputs.faceAngleDeg * Math.PI / 180}>
         <boxGeometry args={[2.4, 1.35, 0.14]} />
-        <meshStandardMaterial color="#b7c0b5" transparent opacity={0.48} />
+        <meshStandardMaterial color="#2a3128" transparent opacity={0.42} roughness={0.82} />
       </mesh>
       {ghosts.map((ghost, index) => (
-        <Trajectory key={ghost.id} points={ghost.points} color="#d9d5c2" opacity={0.24 - index * 0.025} />
+        <Trajectory key={ghost.id} points={ghost.points} color="#ece4d3" opacity={0.26 - index * 0.025} />
       ))}
-      <Trajectory points={sampled} color="#ffb454" opacity={0.95} />
-      <Text position={[result.offlineYd * 0.15, 10, Math.min(85, result.carryYd * 0.55)]} fontSize={2.8} color="#f8f7ef">
+      <Trajectory points={sampled} color="#e86f23" opacity={0.98} />
+      <Text position={[result.offlineYd * 0.15, 10, Math.min(85, result.carryYd * 0.55)]} fontSize={2.8} color="#f5f0e4">
         {namedFlight(inputs)}
       </Text>
       <OrbitControls makeDefault enablePan={false} maxPolarAngle={Math.PI / 2.1} />
@@ -179,21 +179,21 @@ function GreenScene() {
       <directionalLight position={[-3, 6, 4]} intensity={1.4} />
       <mesh rotation-x={-Math.PI / 2}>
         <planeGeometry args={[32, 32, 32, 32]} />
-        <meshStandardMaterial color="#88a281" roughness={0.88} />
+        <meshStandardMaterial color="#748d69" roughness={0.9} />
       </mesh>
-      <gridHelper args={[28, 14, '#eff4ec', '#a9b8a3']} position={[0, 0.04, 0]} />
+      <gridHelper args={[28, 14, '#f5f0e4', '#9bae93']} position={[0, 0.04, 0]} />
       <mesh position={[0, 0.07, 0]} rotation-x={-Math.PI / 2}>
         <ringGeometry args={[result.captureRadiusM * 5, 0.29, 48]} />
-        <meshBasicMaterial color="#ffb454" transparent opacity={0.84} />
+        <meshBasicMaterial color="#e86f23" transparent opacity={0.9} />
       </mesh>
       <mesh position={[0, 0.045, 0]} rotation-x={-Math.PI / 2}>
         <circleGeometry args={[0.27, 48]} />
-        <meshBasicMaterial color="#17201a" />
+        <meshBasicMaterial color="#171c17" />
       </mesh>
-      <Trajectory points={points} color="#ffb454" opacity={0.96} />
+      <Trajectory points={points} color="#e86f23" opacity={0.98} />
       <mesh position={points[0]}>
         <sphereGeometry args={[0.18, 24, 12]} />
-        <meshStandardMaterial color="#f8f7ef" />
+        <meshStandardMaterial color="#f7f1e3" roughness={0.48} />
       </mesh>
       <OrbitControls makeDefault enablePan={false} maxPolarAngle={Math.PI / 2.08} />
     </>

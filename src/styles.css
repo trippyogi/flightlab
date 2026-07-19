@@ -1,8 +1,22 @@
 :root {
   color-scheme: light;
   font-family: "Space Grotesk", "Archivo", Inter, system-ui, sans-serif;
-  background: #dfe7dc;
-  color: #1c241f;
+  --ink: #171c17;
+  --charcoal: #20231e;
+  --olive-900: #263324;
+  --olive-700: #52684e;
+  --olive-500: #7d9275;
+  --sage-300: #c8d4c2;
+  --chalk: #f5f0e4;
+  --paper: #ede9dc;
+  --line: rgba(23, 28, 23, 0.16);
+  --line-strong: rgba(23, 28, 23, 0.28);
+  --amber: #e86f23;
+  --amber-soft: #f2a04d;
+  --tan: #b88b55;
+  --shadow: rgba(18, 24, 17, 0.16);
+  background: var(--sage-300);
+  color: var(--ink);
   font-synthesis: none;
   text-rendering: optimizeLegibility;
 }
@@ -27,7 +41,9 @@ input {
   display: grid;
   grid-template-columns: 92px minmax(0, 1fr) 360px;
   min-height: 100vh;
-  background: linear-gradient(#dfe7dc, #cdd9cc);
+  background:
+    linear-gradient(90deg, rgba(245, 240, 228, 0.38) 0 1px, transparent 1px 18px),
+    linear-gradient(#cad5c4, #aebda8 55%, #dde4d6);
 }
 
 .module-rail {
@@ -36,8 +52,10 @@ input {
   gap: 10px;
   align-items: center;
   padding: 18px 12px;
-  border-right: 1px solid rgba(28, 36, 31, 0.14);
-  background: rgba(239, 244, 236, 0.76);
+  border-right: 1px solid var(--line-strong);
+  background:
+    radial-gradient(circle at 50% 14px, rgba(232, 111, 35, 0.24) 0 2px, transparent 3px 100%),
+    linear-gradient(180deg, #eff0e6, #d9e0d4);
 }
 
 .mark,
@@ -51,7 +69,10 @@ input {
   place-items: center;
   height: 46px;
   margin-bottom: 12px;
-  color: #26352b;
+  border: 1px solid rgba(38, 51, 36, 0.18);
+  background: var(--chalk);
+  color: var(--olive-900);
+  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.62) inset;
 }
 
 .rail-button {
@@ -61,8 +82,9 @@ input {
   min-height: 64px;
   border: 1px solid transparent;
   background: transparent;
-  color: #4c5c51;
+  color: #4f5c4c;
   cursor: pointer;
+  transition: background 160ms ease, border-color 160ms ease, color 160ms ease, transform 160ms ease;
 }
 
 .rail-button span {
@@ -70,14 +92,23 @@ input {
 }
 
 .rail-button.active {
-  border-color: rgba(255, 180, 84, 0.92);
-  background: #fffaf0;
-  color: #162019;
+  border-color: rgba(232, 111, 35, 0.88);
+  background: var(--chalk);
+  color: var(--ink);
+  box-shadow: 0 7px 18px -14px var(--shadow);
+}
+
+.rail-button:hover {
+  border-color: rgba(38, 51, 36, 0.2);
+  background: rgba(245, 240, 228, 0.48);
 }
 
 .stage {
   position: relative;
   min-width: 0;
+  background:
+    linear-gradient(135deg, rgba(23, 28, 23, 0.08) 0 1px, transparent 1px 18px),
+    linear-gradient(180deg, rgba(245, 240, 228, 0.34), rgba(38, 51, 36, 0.08));
 }
 
 .scene {
@@ -92,14 +123,16 @@ input {
   display: flex;
   gap: 12px;
   align-items: baseline;
-  color: #17201a;
+  color: var(--ink);
   pointer-events: none;
+  text-shadow: 0 1px 0 rgba(245, 240, 228, 0.62);
 }
 
 .hud span {
   font-family: "IBM Plex Mono", ui-monospace, monospace;
   font-size: 13px;
   text-transform: lowercase;
+  color: var(--charcoal);
 }
 
 .hud strong {
@@ -115,10 +148,13 @@ input {
   gap: 14px;
   min-height: 100vh;
   padding: 20px;
-  border-left: 1px solid rgba(28, 36, 31, 0.14);
-  background: rgba(246, 248, 241, 0.88);
+  border-left: 1px solid var(--line-strong);
+  background:
+    linear-gradient(135deg, rgba(82, 104, 78, 0.08) 0 12px, transparent 12px 24px),
+    linear-gradient(180deg, rgba(245, 240, 228, 0.94), rgba(234, 231, 218, 0.92));
   backdrop-filter: blur(12px);
   overflow: auto;
+  box-shadow: -18px 0 36px -34px var(--shadow);
 }
 
 .segmented,
@@ -130,9 +166,9 @@ input {
 .segmented {
   grid-template-columns: repeat(3, 1fr);
   padding: 4px;
-  border: 1px solid rgba(28, 36, 31, 0.14);
+  border: 1px solid var(--line);
   border-radius: 8px;
-  background: #e7ede3;
+  background: rgba(38, 51, 36, 0.1);
 }
 
 .segmented button,
@@ -140,16 +176,27 @@ input {
 .primary,
 .readout {
   min-height: 38px;
-  border: 1px solid rgba(28, 36, 31, 0.13);
+  border: 1px solid var(--line);
   border-radius: 7px;
-  background: #f9fbf4;
-  color: #1c241f;
+  background: rgba(245, 240, 228, 0.88);
+  color: var(--ink);
   cursor: pointer;
+  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.58) inset;
+  transition: background 150ms ease, border-color 150ms ease, color 150ms ease, transform 150ms ease;
 }
 
 .segmented button.active {
-  background: #ffb454;
-  border-color: #e69b3f;
+  background: var(--amber);
+  border-color: #b95418;
+  color: #17120b;
+  box-shadow: 0 0 0 1px rgba(23, 28, 23, 0.08) inset, 0 8px 18px -15px rgba(232, 111, 35, 0.9);
+}
+
+.segmented button:hover,
+.quick-grid button:hover,
+.readout:hover {
+  border-color: rgba(38, 51, 36, 0.26);
+  background: var(--chalk);
 }
 
 .control {
@@ -162,19 +209,19 @@ input {
   justify-content: space-between;
   gap: 12px;
   font-size: 13px;
-  color: #4c5c51;
+  color: #4f5c4c;
 }
 
 .control b,
 .readout strong {
   font-family: "IBM Plex Mono", ui-monospace, monospace;
   font-weight: 650;
-  color: #17201a;
+  color: var(--ink);
 }
 
 input[type="range"] {
   width: 100%;
-  accent-color: #ffb454;
+  accent-color: var(--amber);
 }
 
 .quick-grid {
@@ -186,8 +233,15 @@ input[type="range"] {
   align-items: center;
   justify-content: center;
   gap: 8px;
-  background: #1f2b23;
-  color: #fffaf0;
+  border-color: rgba(23, 28, 23, 0.8);
+  background: var(--charcoal);
+  color: var(--chalk);
+  box-shadow: 0 10px 22px -18px rgba(23, 28, 23, 0.9);
+}
+
+.primary:hover {
+  background: #111510;
+  border-color: var(--tan);
 }
 
 .readouts {
@@ -205,7 +259,7 @@ input[type="range"] {
 }
 
 .readout span {
-  color: #55645a;
+  color: #586553;
 }
 
 .readout em {
@@ -214,21 +268,22 @@ input[type="range"] {
   font-size: 11px;
   font-style: normal;
   line-height: 1.45;
-  color: #667466;
+  color: #66725f;
 }
 
 .result-chip {
   display: grid;
   place-items: center;
   min-height: 44px;
-  border: 1px solid rgba(28, 36, 31, 0.14);
+  border: 1px solid var(--line);
   border-radius: 8px;
   font-family: "IBM Plex Mono", ui-monospace, monospace;
-  background: #efe8dc;
+  background: var(--paper);
 }
 
 .result-chip.made {
-  background: #d8ead7;
+  background: #d8e5cf;
+  border-color: rgba(82, 104, 78, 0.34);
 }
 
 .placeholder {
@@ -242,7 +297,7 @@ input[type="range"] {
 
 .placeholder p {
   margin: 0;
-  color: #4c5c51;
+  color: #4f5c4c;
 }
 
 .manifest-notes {
@@ -250,8 +305,8 @@ input[type="range"] {
   gap: 6px;
   margin-top: auto;
   padding-top: 14px;
-  border-top: 1px solid rgba(28, 36, 31, 0.13);
-  color: #5f6c62;
+  border-top: 1px solid var(--line);
+  color: #616b5e;
 }
 
 .manifest-notes h2 {
@@ -259,6 +314,7 @@ input[type="range"] {
   font-size: 11px;
   font-weight: 700;
   text-transform: uppercase;
+  color: var(--charcoal);
 }
 
 .manifest-notes p {
