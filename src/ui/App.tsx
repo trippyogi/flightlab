@@ -14,7 +14,7 @@ const ftToScene = 0.3048 * greenScale;
 const compassLabels = ['N', 'NE', 'E', 'SE', 'S', 'SW', 'W', 'NW'];
 const parDefaults: Record<HolePar, number> = { par3: 165, par4: 440, par5: 560 };
 const ydToImpactScene = 0.15;
-const impactLateralScale = 0.32;
+const impactLateralScale = -0.32;
 const feedbackEndpoint = import.meta.env.VITE_FEEDBACK_ENDPOINT as string | undefined;
 const impactCameraViews: Record<ImpactView, { label: string }> = {
   player: { label: 'Player' },
