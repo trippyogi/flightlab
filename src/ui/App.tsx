@@ -15,6 +15,8 @@ const compassLabels = ['N', 'NE', 'E', 'SE', 'S', 'SW', 'W', 'NW'];
 const parDefaults: Record<HolePar, number> = { par3: 165, par4: 440, par5: 560 };
 const ydToImpactScene = 0.15;
 const impactLateralScale = -0.32;
+const fairwayWidthScene = 40 * ydToImpactScene;
+const targetGreenRadiusScene = 10 * ydToImpactScene;
 const feedbackEndpoint = import.meta.env.VITE_FEEDBACK_ENDPOINT as string | undefined;
 const impactCameraViews: Record<ImpactView, { label: string }> = {
   player: { label: 'Player' },
@@ -159,7 +161,7 @@ function impactCameraConfig(view: ImpactView, targetDistanceYd: number, carryYd:
     return {
       position: [0, Math.max(128, shotDepth * 1.78), midZ] as [number, number, number],
       target: [0, 0, midZ] as [number, number, number],
-      up: [0, 0, -1] as [number, number, number],
+      up: [0, 0, 1] as [number, number, number],
       maxPolar: 0.08,
     };
   }
@@ -242,6 +244,12 @@ function ImpactScene() {
   const dispersionWidthYd = Math.round(Math.max(16, result.carryYd * (inputs.club === 'Driver' ? 0.12 : inputs.club === '6-iron' ? 0.09 : 0.07)));
   const dispersionHalfX = (dispersionWidthYd / 2) * Math.abs(impactLateralScale);
   const dispersionDepth = Math.max(9, result.carryYd * 0.045) * ydToImpactScene;
+  const roughLength = Math.max(targetZ + 36, 92);
+  const fairwayLength = Math.max(targetZ, 36);
+  const fairwayBunkers = inputs.holePar === 'par3' ? [] : [
+    [-fairwayWidthScene * 0.72, targetZ * 0.48, 0.78],
+    [fairwayWidthScene * 0.74, targetZ * 0.62, 0.86],
+  ] as const;
   const trees = useMemo(() => [-1, 1].flatMap((side) => [70, 120, 175, 235, 305, 385, 485].map((z, index) => ({
     x: side * (23 + (index % 3) * 5),
     z: z * ydToImpactScene,
@@ -252,30 +260,36 @@ function ImpactScene() {
       <ImpactCameraRig view={impactView} targetDistanceYd={inputs.targetDistanceYd} carryYd={result.carryYd} apexYd={result.apexYd} />
       <ambientLight intensity={0.8} />
       <directionalLight position={[4, 8, 5]} intensity={1.6} />
-      <mesh rotation-x={-Math.PI / 2} position={[0, -0.04, 52]}>
-        <planeGeometry args={[96, 126]} />
+      <mesh rotation-x={-Math.PI / 2} position={[0, -0.04, roughLength * 0.5 - 8]}>
+        <planeGeometry args={[96, roughLength]} />
         <meshStandardMaterial color="#4f6649" roughness={0.94} />
       </mesh>
-      <mesh rotation-x={-Math.PI / 2} position={[0, -0.02, 47]}>
-        <planeGeometry args={[34, 104]} />
+      <mesh rotation-x={-Math.PI / 2} position={[0, -0.02, fairwayLength * 0.5]}>
+        <planeGeometry args={[fairwayWidthScene, fairwayLength]} />
         <meshStandardMaterial color="#6f8468" roughness={0.92} metalness={0.02} />
       </mesh>
       <mesh rotation-x={-Math.PI / 2} position={[0, 0.015, -1]}>
-        <circleGeometry args={[3.2, 48]} />
+        <circleGeometry args={[1.2, 48]} />
         <meshBasicMaterial color="#f8efd9" transparent opacity={0.18} />
       </mesh>
       <mesh rotation-x={-Math.PI / 2} position={[0, 0.02, targetZ]}>
-        <circleGeometry args={[13.5, 64]} />
+        <circleGeometry args={[targetGreenRadiusScene, 64]} />
         <meshStandardMaterial color="#8fa67f" roughness={0.86} />
       </mesh>
-      <mesh rotation-x={-Math.PI / 2} position={[-15.5, 0.035, targetZ - 3.6]}>
-        <circleGeometry args={[4.6, 40]} />
+      <mesh rotation-x={-Math.PI / 2} position={[-2.8, 0.035, targetZ - 0.75]}>
+        <circleGeometry args={[0.8, 40]} />
         <meshBasicMaterial color="#d7c58a" transparent opacity={0.94} />
       </mesh>
-      <mesh rotation-x={-Math.PI / 2} position={[15, 0.035, targetZ + 5.5]}>
-        <circleGeometry args={[5.2, 40]} />
+      <mesh rotation-x={-Math.PI / 2} position={[2.75, 0.035, targetZ + 0.92]}>
+        <circleGeometry args={[0.9, 40]} />
         <meshBasicMaterial color="#d7c58a" transparent opacity={0.9} />
       </mesh>
+      {fairwayBunkers.map(([x, z, radius]) => (
+        <mesh key={`${x}:${z}`} rotation-x={-Math.PI / 2} position={[x, 0.03, z]}>
+          <circleGeometry args={[radius, 36]} />
+          <meshBasicMaterial color="#d7c58a" transparent opacity={0.86} />
+        </mesh>
+      ))}
       {trees.map((tree) => (
         <group key={`${tree.x}:${tree.z}`} position={[tree.x, 0, tree.z]}>
           <mesh position={[0, tree.h * 0.24, 0]}>
@@ -288,7 +302,7 @@ function ImpactScene() {
           </mesh>
         </group>
       ))}
-      <gridHelper args={[86, 18, '#f5f0e4', '#9aaa91']} position={[0, 0.01, 47]} />
+      <gridHelper args={[Math.max(72, targetZ + 20), 18, '#f5f0e4', '#9aaa91']} position={[0, 0.01, targetZ * 0.5]} />
       <mesh position={[0, 0.25, 0]}>
         <sphereGeometry args={[0.32, 32, 16]} />
         <meshStandardMaterial color="#f7f1e3" roughness={0.46} />
