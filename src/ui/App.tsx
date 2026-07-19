@@ -43,8 +43,8 @@ const flightPresets: FlightPreset[] = [
 
 function curveAngles(curve: FlightPreset['curve'], handedness: Handedness) {
   const side = handedness === 'left' ? -1 : 1;
-  if (curve === 'draw') return { faceAngleDeg: -1.5 * side, clubPathDeg: 3.5 * side };
-  if (curve === 'fade') return { faceAngleDeg: 1.5 * side, clubPathDeg: -3.5 * side };
+  if (curve === 'draw') return { faceAngleDeg: 1.5 * side, clubPathDeg: 3.5 * side };
+  if (curve === 'fade') return { faceAngleDeg: -1.5 * side, clubPathDeg: -3.5 * side };
   return { faceAngleDeg: 0, clubPathDeg: 0 };
 }
 
