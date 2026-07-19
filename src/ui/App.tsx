@@ -1,5 +1,5 @@
 import { Canvas } from '@react-three/fiber';
-import { OrbitControls, Text } from '@react-three/drei';
+import { Line, OrbitControls, Text } from '@react-three/drei';
 import { Activity, CircleDot, FlaskConical, Gauge, Target } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import { clsx } from 'clsx';
@@ -92,9 +92,9 @@ function ImpactScene() {
         <meshStandardMaterial color="#2a3128" transparent opacity={0.42} roughness={0.82} />
       </mesh>
       {ghosts.map((ghost, index) => (
-        <Trajectory key={ghost.id} points={ghost.points} color="#ece4d3" opacity={0.26 - index * 0.025} />
+        <Trajectory key={ghost.id} points={ghost.points} color="#ece4d3" opacity={0.26 - index * 0.025} width={2.6} />
       ))}
-      <Trajectory points={sampled} color="#e86f23" opacity={0.98} />
+      <Trajectory points={sampled} color="#e86f23" opacity={0.98} width={5.2} />
       <Text position={[result.offlineYd * 0.15, 10, Math.min(85, result.carryYd * 0.55)]} fontSize={2.8} color="#f5f0e4">
         {namedFlight(inputs)}
       </Text>
@@ -103,15 +103,10 @@ function ImpactScene() {
   );
 }
 
-function Trajectory({ points, color, opacity }: { points: readonly (readonly [number, number, number])[]; color: string; opacity: number }) {
-  const vertices = useMemo(() => new Float32Array(points.flatMap((point) => [point[0] * 0.15, point[1] * 0.15, point[2] * 0.15])), [points]);
+function Trajectory({ points, color, opacity, width = 4 }: { points: readonly (readonly [number, number, number])[]; color: string; opacity: number; width?: number }) {
+  const scaled = useMemo(() => points.map((point) => [point[0] * 0.15, point[1] * 0.15, point[2] * 0.15] as [number, number, number]), [points]);
   return (
-    <line>
-      <bufferGeometry>
-        <bufferAttribute attach="attributes-position" args={[vertices, 3]} />
-      </bufferGeometry>
-      <lineBasicMaterial color={color} transparent opacity={opacity} linewidth={4} />
-    </line>
+    <Line points={scaled} color={color} lineWidth={width} transparent opacity={opacity} />
   );
 }
 
@@ -190,7 +185,7 @@ function GreenScene() {
         <circleGeometry args={[0.27, 48]} />
         <meshBasicMaterial color="#171c17" />
       </mesh>
-      <Trajectory points={points} color="#e86f23" opacity={0.98} />
+      <Trajectory points={points} color="#e86f23" opacity={0.98} width={5} />
       <mesh position={points[0]}>
         <sphereGeometry args={[0.18, 24, 12]} />
         <meshStandardMaterial color="#f7f1e3" roughness={0.48} />
