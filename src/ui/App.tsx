@@ -302,8 +302,8 @@ function ImpactPanel() {
 
 function FlightPathIcon({ height, curve }: Pick<FlightPreset, 'height' | 'curve'>) {
   const startX = 32;
-  const endX = curve === 'draw' ? 43 : curve === 'fade' ? 21 : 32;
-  const controlX = curve === 'draw' ? 24 : curve === 'fade' ? 40 : 32;
+  const endX = curve === 'draw' ? 21 : curve === 'fade' ? 43 : 32;
+  const controlX = curve === 'draw' ? 40 : curve === 'fade' ? 24 : 32;
   const apexY = height === 'high' ? 9 : height === 'low' ? 26 : 17;
   const path = `M ${startX} 54 C ${controlX} ${38 + (apexY - 17) * 0.28}, ${endX} ${apexY + 15}, ${endX} ${apexY}`;
 
