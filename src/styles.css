@@ -481,6 +481,101 @@ input[type="range"] {
   line-height: 1.45;
 }
 
+.feedback-dock {
+  position: fixed;
+  right: 382px;
+  bottom: 18px;
+  z-index: 5;
+  display: grid;
+  justify-items: end;
+  gap: 8px;
+  max-width: min(360px, calc(100vw - 32px));
+}
+
+.feedback-toggle,
+.feedback-panel button {
+  border: 1px solid var(--line-strong);
+  border-radius: 7px;
+  background: var(--charcoal);
+  color: var(--chalk);
+  cursor: pointer;
+}
+
+.feedback-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 40px;
+  padding: 0 12px;
+  box-shadow: 0 14px 28px -20px rgba(13, 17, 12, 0.8);
+}
+
+.feedback-panel {
+  display: grid;
+  gap: 10px;
+  width: 340px;
+  padding: 12px;
+  border: 1px solid var(--line-strong);
+  border-radius: 8px;
+  background:
+    linear-gradient(135deg, rgba(70, 92, 63, 0.12) 0 10px, transparent 10px 22px),
+    var(--chalk);
+  box-shadow: 0 18px 44px -28px rgba(13, 17, 12, 0.9);
+}
+
+.feedback-row {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 6px;
+}
+
+.feedback-row button {
+  min-height: 34px;
+  background: rgba(248, 239, 217, 0.92);
+  color: var(--ink);
+}
+
+.feedback-row button.active,
+.feedback-actions button {
+  border-color: #b95418;
+  background: var(--amber);
+  color: #17120b;
+}
+
+.feedback-panel textarea {
+  min-height: 104px;
+  resize: vertical;
+  border: 1px solid var(--line);
+  border-radius: 7px;
+  padding: 10px;
+  background: rgba(248, 239, 217, 0.88);
+  color: var(--ink);
+  font: inherit;
+  line-height: 1.4;
+}
+
+.feedback-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.feedback-actions span {
+  font-size: 12px;
+  color: #586553;
+}
+
+.feedback-actions button {
+  min-width: 78px;
+  min-height: 36px;
+}
+
+.feedback-actions button:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,
@@ -539,5 +634,14 @@ input[type="range"] {
 
   .quick-grid {
     grid-template-columns: repeat(3, minmax(72px, 1fr));
+  }
+
+  .feedback-dock {
+    right: 14px;
+    bottom: 14px;
+  }
+
+  .feedback-toggle span {
+    display: none;
   }
 }

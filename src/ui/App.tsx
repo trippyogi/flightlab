@@ -1,6 +1,6 @@
 import { Canvas } from '@react-three/fiber';
 import { Line, OrbitControls, Text } from '@react-three/drei';
-import { Activity, CircleDot, FlaskConical, Gauge, Target } from 'lucide-react';
+import { Activity, CircleDot, FlaskConical, Gauge, MessageSquare, Target } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import { clsx } from 'clsx';
 import { clubDefaults, namedFlight, simulateImpact, type ClubName, type Handedness, type HolePar, type ImpactInputs } from '../sim/impact';
@@ -15,6 +15,7 @@ const compassLabels = ['N', 'NE', 'E', 'SE', 'S', 'SW', 'W', 'NW'];
 const parDefaults: Record<HolePar, number> = { par3: 165, par4: 440, par5: 560 };
 const ydToImpactScene = 0.15;
 const impactLateralScale = 0.32;
+const feedbackEndpoint = import.meta.env.VITE_FEEDBACK_ENDPOINT as string | undefined;
 
 function compassLabel(degrees: number) {
   const normalized = ((degrees % 360) + 360) % 360;
@@ -506,6 +507,92 @@ function PlaceholderPanel() {
   );
 }
 
+function FeedbackDock() {
+  const activeModule = useLabStore((state) => state.activeModule);
+  const impactInputs = useLabStore((state) => state.impactInputs);
+  const greenInputs = useLabStore((state) => state.greenInputs);
+  const [open, setOpen] = useState(false);
+  const [kind, setKind] = useState<'bug' | 'idea' | 'confusing'>('bug');
+  const [score, setScore] = useState(3);
+  const [text, setText] = useState('');
+  const [status, setStatus] = useState('');
+  const trimmed = text.trim();
+  const canSubmit = trimmed.length >= 12 && trimmed.length <= 1200;
+
+  const submitFeedback = async () => {
+    if (!canSubmit) {
+      setStatus('Add a little more detail.');
+      return;
+    }
+    const payload = {
+      id: crypto.randomUUID(),
+      createdAt: new Date().toISOString(),
+      kind,
+      score,
+      text: trimmed,
+      context: {
+        activeModule,
+        url: window.location.href,
+        viewport: { width: window.innerWidth, height: window.innerHeight },
+        userAgent: navigator.userAgent,
+        inputs: activeModule === 'impact' ? impactInputs : activeModule === 'green' ? greenInputs : null,
+      },
+    };
+    const existing = JSON.parse(localStorage.getItem('flightlab.feedback') ?? '[]') as unknown[];
+    localStorage.setItem('flightlab.feedback', JSON.stringify([...existing, payload].slice(-100)));
+    setStatus('Stored locally.');
+    if (feedbackEndpoint) {
+      try {
+        const response = await fetch(feedbackEndpoint, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload),
+          keepalive: true,
+        });
+        setStatus(response.ok ? 'Sent and stored.' : 'Stored locally; send failed.');
+      } catch {
+        setStatus('Stored locally; offline send failed.');
+      }
+    }
+    setText('');
+  };
+
+  return (
+    <div className={clsx('feedback-dock', open && 'open')}>
+      <button type="button" className="feedback-toggle" onClick={() => setOpen(!open)} aria-expanded={open}>
+        <MessageSquare size={18} />
+        <span>Feedback</span>
+      </button>
+      {open ? (
+        <section className="feedback-panel" aria-label="flightlab feedback">
+          <div className="feedback-row">
+            {(['bug', 'confusing', 'idea'] as const).map((option) => (
+              <button key={option} type="button" className={clsx(kind === option && 'active')} onClick={() => setKind(option)}>
+                {option}
+              </button>
+            ))}
+          </div>
+          <label className="control feedback-score">
+            <span>Signal<b>{score}/5</b></span>
+            <input type="range" min={1} max={5} step={1} value={score} onChange={(event) => setScore(Number(event.currentTarget.value))} />
+          </label>
+          <textarea
+            value={text}
+            minLength={12}
+            maxLength={1200}
+            placeholder="What broke, confused you, or would make this better?"
+            onChange={(event) => setText(event.currentTarget.value)}
+          />
+          <div className="feedback-actions">
+            <span>{status || `${trimmed.length}/1200`}</span>
+            <button type="button" onClick={submitFeedback} disabled={!canSubmit}>Send</button>
+          </div>
+        </section>
+      ) : null}
+    </div>
+  );
+}
+
 export function App() {
   const activeModule = useLabStore((state) => state.activeModule);
   const activeManifest = modules.find((module) => module.id === activeModule);
@@ -524,6 +611,7 @@ export function App() {
         </header>
       </section>
       {activeModule === 'impact' ? <ImpactPanel /> : activeModule === 'green' ? <GreenPanel /> : <PlaceholderPanel />}
+      <FeedbackDock />
     </main>
   );
 }
