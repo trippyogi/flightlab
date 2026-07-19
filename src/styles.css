@@ -1,0 +1,279 @@
+:root {
+  color-scheme: light;
+  font-family: "Space Grotesk", "Archivo", Inter, system-ui, sans-serif;
+  background: #dfe7dc;
+  color: #1c241f;
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  min-width: 320px;
+  min-height: 100vh;
+  overflow: hidden;
+}
+
+button,
+input {
+  font: inherit;
+}
+
+.app {
+  display: grid;
+  grid-template-columns: 92px minmax(0, 1fr) 360px;
+  min-height: 100vh;
+  background: linear-gradient(#dfe7dc, #cdd9cc);
+}
+
+.module-rail {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  align-items: center;
+  padding: 18px 12px;
+  border-right: 1px solid rgba(28, 36, 31, 0.14);
+  background: rgba(239, 244, 236, 0.76);
+}
+
+.mark,
+.rail-button {
+  width: 62px;
+  border-radius: 8px;
+}
+
+.mark {
+  display: grid;
+  place-items: center;
+  height: 46px;
+  margin-bottom: 12px;
+  color: #26352b;
+}
+
+.rail-button {
+  display: grid;
+  gap: 5px;
+  place-items: center;
+  min-height: 64px;
+  border: 1px solid transparent;
+  background: transparent;
+  color: #4c5c51;
+  cursor: pointer;
+}
+
+.rail-button span {
+  font-size: 11px;
+}
+
+.rail-button.active {
+  border-color: rgba(255, 180, 84, 0.92);
+  background: #fffaf0;
+  color: #162019;
+}
+
+.stage {
+  position: relative;
+  min-width: 0;
+}
+
+.scene {
+  position: absolute;
+  inset: 0;
+}
+
+.hud {
+  position: absolute;
+  top: 20px;
+  left: 24px;
+  display: flex;
+  gap: 12px;
+  align-items: baseline;
+  color: #17201a;
+  pointer-events: none;
+}
+
+.hud span {
+  font-family: "IBM Plex Mono", ui-monospace, monospace;
+  font-size: 13px;
+  text-transform: lowercase;
+}
+
+.hud strong {
+  font-size: 32px;
+  font-weight: 650;
+  letter-spacing: 0;
+}
+
+.panel {
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  min-height: 100vh;
+  padding: 20px;
+  border-left: 1px solid rgba(28, 36, 31, 0.14);
+  background: rgba(246, 248, 241, 0.88);
+  backdrop-filter: blur(12px);
+  overflow: auto;
+}
+
+.segmented,
+.quick-grid {
+  display: grid;
+  gap: 6px;
+}
+
+.segmented {
+  grid-template-columns: repeat(3, 1fr);
+  padding: 4px;
+  border: 1px solid rgba(28, 36, 31, 0.14);
+  border-radius: 8px;
+  background: #e7ede3;
+}
+
+.segmented button,
+.quick-grid button,
+.primary,
+.readout {
+  min-height: 38px;
+  border: 1px solid rgba(28, 36, 31, 0.13);
+  border-radius: 7px;
+  background: #f9fbf4;
+  color: #1c241f;
+  cursor: pointer;
+}
+
+.segmented button.active {
+  background: #ffb454;
+  border-color: #e69b3f;
+}
+
+.control {
+  display: grid;
+  gap: 8px;
+}
+
+.control span {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  font-size: 13px;
+  color: #4c5c51;
+}
+
+.control b,
+.readout strong {
+  font-family: "IBM Plex Mono", ui-monospace, monospace;
+  font-weight: 650;
+  color: #17201a;
+}
+
+input[type="range"] {
+  width: 100%;
+  accent-color: #ffb454;
+}
+
+.quick-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.primary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  background: #1f2b23;
+  color: #fffaf0;
+}
+
+.readouts {
+  display: grid;
+  gap: 8px;
+}
+
+.readout {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 4px 12px;
+  width: 100%;
+  padding: 10px 12px;
+  text-align: left;
+}
+
+.readout span {
+  color: #55645a;
+}
+
+.readout em {
+  grid-column: 1 / -1;
+  font-family: "IBM Plex Mono", ui-monospace, monospace;
+  font-size: 11px;
+  font-style: normal;
+  line-height: 1.45;
+  color: #667466;
+}
+
+.result-chip {
+  display: grid;
+  place-items: center;
+  min-height: 44px;
+  border: 1px solid rgba(28, 36, 31, 0.14);
+  border-radius: 8px;
+  font-family: "IBM Plex Mono", ui-monospace, monospace;
+  background: #efe8dc;
+}
+
+.result-chip.made {
+  background: #d8ead7;
+}
+
+.placeholder {
+  justify-content: center;
+  line-height: 1.55;
+}
+
+.placeholder h2 {
+  margin: 0;
+}
+
+.placeholder p {
+  margin: 0;
+  color: #4c5c51;
+}
+
+@media (max-width: 920px) {
+  body {
+    overflow: auto;
+  }
+
+  .app {
+    grid-template-columns: 68px minmax(0, 1fr);
+    grid-template-rows: minmax(52vh, 1fr) auto;
+  }
+
+  .module-rail {
+    grid-row: 1 / 3;
+    padding-inline: 6px;
+  }
+
+  .mark,
+  .rail-button {
+    width: 54px;
+  }
+
+  .stage {
+    min-height: 52vh;
+  }
+
+  .panel {
+    grid-column: 2;
+    min-height: auto;
+    max-height: none;
+    border-left: 0;
+    border-top: 1px solid rgba(28, 36, 31, 0.14);
+  }
+}
