@@ -158,8 +158,8 @@ export function simulateImpact(rawInputs: ImpactInputs): ImpactResult {
 
 export function namedFlight(input: ImpactInputs): string {
   const side = input.handedness === 'left' ? -1 : 1;
-  const face = input.faceAngleDeg * side;
-  const faceToPath = (input.faceAngleDeg - input.clubPathDeg) * side;
+  const face = -input.faceAngleDeg * side;
+  const faceToPath = (-input.faceAngleDeg - input.clubPathDeg) * side;
   const start = face < -1 ? 'pull' : face > 1 ? 'push' : 'straight';
   const curve = faceToPath < -1 ? 'draw' : faceToPath > 1 ? 'fade' : 'straight';
   return start === 'straight' && curve === 'straight' ? 'straight' : `${start}-${curve}`;

@@ -62,8 +62,8 @@ describe('simulateImpact', () => {
     };
 
     expect(namedFlight(base)).toBe('straight');
-    expect(namedFlight({ ...base, faceAngleDeg: 4, clubPathDeg: 7 })).toBe('push-draw');
-    expect(namedFlight({ ...base, faceAngleDeg: -4, clubPathDeg: -7 })).toBe('pull-fade');
-    expect(namedFlight({ ...base, handedness: 'left', faceAngleDeg: -4, clubPathDeg: -7 })).toBe('push-draw');
+    expect(namedFlight({ ...base, faceAngleDeg: -4, clubPathDeg: 7 })).toBe('push-draw');
+    expect(namedFlight({ ...base, faceAngleDeg: 4, clubPathDeg: -7 })).toBe('pull-fade');
+    expect(namedFlight({ ...base, handedness: 'left', faceAngleDeg: 4, clubPathDeg: -7 })).toBe('push-draw');
   });
 });

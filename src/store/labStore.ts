@@ -31,7 +31,7 @@ export const useLabStore = create<LabState>((set) => ({
     clubSpeedMph: 113,
     attackAngleDeg: 2,
     clubPathDeg: -3.5,
-    faceAngleDeg: -1.5,
+    faceAngleDeg: 1.5,
     dynamicLoftDeg: 12,
     strikeX: 0,
     strikeY: 0,

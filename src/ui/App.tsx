@@ -43,8 +43,8 @@ const flightPresets: FlightPreset[] = [
 
 function curveAngles(curve: FlightPreset['curve'], handedness: Handedness) {
   const side = handedness === 'left' ? -1 : 1;
-  if (curve === 'draw') return { faceAngleDeg: 1.5 * side, clubPathDeg: 3.5 * side };
-  if (curve === 'fade') return { faceAngleDeg: -1.5 * side, clubPathDeg: -3.5 * side };
+  if (curve === 'draw') return { faceAngleDeg: -1.5 * side, clubPathDeg: 3.5 * side };
+  if (curve === 'fade') return { faceAngleDeg: 1.5 * side, clubPathDeg: -3.5 * side };
   return { faceAngleDeg: 0, clubPathDeg: 0 };
 }
 
@@ -344,7 +344,7 @@ function ImpactPanel() {
       <Slider label="Club speed" value={inputs.clubSpeedMph} min={60} max={125} unit=" mph" onChange={(v) => setImpactInput('clubSpeedMph', v)} />
       <Slider label="Attack" value={inputs.attackAngleDeg} min={-8} max={6} step={0.5} unit=" deg" onChange={(v) => setImpactInput('attackAngleDeg', v)} />
       <Slider label="Path" value={inputs.clubPathDeg} min={-8} max={8} step={0.5} unit=" deg" onChange={(v) => setImpactInput('clubPathDeg', v)} />
-      <Slider label="Face" value={inputs.faceAngleDeg} min={-8} max={8} step={0.5} unit=" deg" onChange={(v) => setImpactInput('faceAngleDeg', v)} />
+      <Slider label="Face" value={-inputs.faceAngleDeg} min={-8} max={8} step={0.5} unit=" deg" onChange={(v) => setImpactInput('faceAngleDeg', -v)} />
       <Slider label="Launch" value={result.launchAngleDeg} min={4} max={38} step={0.5} unit=" deg" onChange={setLaunchAngle} />
       <Slider label="Toe / heel" value={inputs.strikeX} min={-2} max={2} step={0.1} onChange={(v) => setImpactInput('strikeX', v)} />
       <div className="quick-grid">
