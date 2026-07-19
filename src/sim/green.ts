@@ -26,6 +26,7 @@ export type GreenLeave = {
 export type GreenResult = {
   points: RollPoint[];
   rolloutPoints: RollPoint[];
+  secondPuttPoints: RollPoint[];
   leave: GreenLeave;
   lipSpeedMs: number;
   captureRadiusM: number;
@@ -52,18 +53,23 @@ function captureRadius(lipSpeedMs: number) {
   return cupRadiusM * (0.28 + 0.72 * taper) + ballRadiusM * 0.15;
 }
 
-export function simulateGreen(inputs: GreenInputs): GreenResult {
-  const target: Vec2 = [0, 0];
-  const start: Vec2 = [0, -inputs.distanceFt * ftToM];
-  const paceDistanceM = (inputs.distanceFt + inputs.pacePastFt) * ftToM;
-  const friction = frictionFromStimp(inputs.stimp);
-  const initialSpeed = Math.sqrt(Math.max(0.1, 2 * friction * paceDistanceM));
-  const aim = degToRad(inputs.aimDeg);
-  const fall = degToRad(inputs.slopeDirectionDeg);
-  const slopeAccel = (5 / 7) * g * (inputs.slopePercent / 100);
-  const gravity: Vec2 = [Math.sin(fall) * slopeAccel, Math.cos(fall) * slopeAccel];
+function rollPutt({
+  start,
+  target,
+  initialVelocity,
+  gravity,
+  friction,
+  continueAfterCapture,
+}: {
+  start: Vec2;
+  target: Vec2;
+  initialVelocity: Vec2;
+  gravity: Vec2;
+  friction: number;
+  continueAfterCapture: boolean;
+}) {
   let position: Vec2 = start;
-  let velocity: Vec2 = [-Math.sin(aim) * initialSpeed, Math.cos(aim) * initialSpeed];
+  let velocity: Vec2 = initialVelocity;
   const points: RollPoint[] = [{ t: 0, position, velocity }];
   const rolloutPoints: RollPoint[] = [];
   let closest = Number.POSITIVE_INFINITY;
@@ -87,15 +93,38 @@ export function simulateGreen(inputs: GreenInputs): GreenResult {
       made = true;
       lipSpeedMs = Math.hypot(velocity[0], velocity[1]);
       points.push({ t: i * dt, position: target, velocity: [0, 0] });
+      if (!continueAfterCapture) break;
       rolloutPoints.push({ t: i * dt, position: target, velocity }, { t: i * dt, position, velocity });
       continue;
     }
-    if (made) {
+    if (made && continueAfterCapture) {
       rolloutPoints.push({ t: i * dt, position, velocity });
     } else {
       points.push({ t: i * dt, position, velocity });
     }
   }
+  return { points, rolloutPoints, closest, lipSpeedMs, made };
+}
+
+export function simulateGreen(inputs: GreenInputs): GreenResult {
+  const target: Vec2 = [0, 0];
+  const start: Vec2 = [0, -inputs.distanceFt * ftToM];
+  const friction = frictionFromStimp(inputs.stimp);
+  const firstPaceDistanceM = (inputs.distanceFt + inputs.pacePastFt) * ftToM;
+  const firstInitialSpeed = Math.sqrt(Math.max(0.1, 2 * friction * firstPaceDistanceM));
+  const aim = degToRad(inputs.aimDeg);
+  const fall = degToRad(inputs.slopeDirectionDeg);
+  const slopeAccel = (5 / 7) * g * (inputs.slopePercent / 100);
+  const gravity: Vec2 = [Math.sin(fall) * slopeAccel, Math.cos(fall) * slopeAccel];
+  const firstPutt = rollPutt({
+    start,
+    target,
+    initialVelocity: [-Math.sin(aim) * firstInitialSpeed, Math.cos(aim) * firstInitialSpeed],
+    gravity,
+    friction,
+    continueAfterCapture: true,
+  });
+  const { points, rolloutPoints, closest, lipSpeedMs, made } = firstPutt;
   const last = points[points.length - 1];
   const rolloutLast = rolloutPoints[rolloutPoints.length - 1] ?? last;
   const lineBreak = last.position[0] / ftToM;
@@ -107,9 +136,21 @@ export function simulateGreen(inputs: GreenInputs): GreenResult {
   const slopeRead = Math.abs(fallComponent) < 0.05 ? 'sidehill' : fallComponent > 0 ? 'downhill' : 'uphill';
   const sideRead = Math.abs(rolloutLast.position[0]) < 0.05 ? 'center' : rolloutLast.position[0] > 0 ? 'high side' : 'low side';
   const heightRead = slopeRead === 'downhill' ? 'above hole' : slopeRead === 'uphill' ? 'below hole' : 'level';
+  const secondPuttPoints = leaveDistanceM < 0.12 ? [] : rollPutt({
+    start: rolloutLast.position,
+    target,
+    initialVelocity: [
+      (toCup[0] / leaveDistanceM) * Math.sqrt(Math.max(0.1, 2 * friction * (leaveDistanceM + 1.1 * ftToM))),
+      (toCup[1] / leaveDistanceM) * Math.sqrt(Math.max(0.1, 2 * friction * (leaveDistanceM + 1.1 * ftToM))),
+    ],
+    gravity,
+    friction,
+    continueAfterCapture: false,
+  }).points;
   return {
     points,
     rolloutPoints,
+    secondPuttPoints,
     leave: {
       position: rolloutLast.position,
       distanceFt: leaveDistanceM / ftToM,

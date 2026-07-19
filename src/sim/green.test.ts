@@ -110,4 +110,22 @@ describe('simulateGreen', () => {
     expect(['uphill', 'downhill', 'sidehill']).toContain(result.leave.slopeRead);
     expect(['above hole', 'below hole', 'level']).toContain(result.leave.heightRead);
   });
+
+  it('simulates second-putt break instead of drawing a straight return line', () => {
+    const result = simulateGreen({
+      distanceFt: 24,
+      slopePercent: 4,
+      slopeDirectionDeg: 90,
+      stimp: 12,
+      aimDeg: -6,
+      pacePastFt: 0.4,
+    });
+    const start = result.secondPuttPoints[0].position;
+    const mid = result.secondPuttPoints[Math.floor(result.secondPuttPoints.length / 2)].position;
+    const end = result.secondPuttPoints.at(-1)!.position;
+    const straightMidX = (start[0] + end[0]) / 2;
+
+    expect(result.secondPuttPoints.length).toBeGreaterThan(8);
+    expect(Math.abs(mid[0] - straightMidX)).toBeGreaterThan(0.015);
+  });
 });

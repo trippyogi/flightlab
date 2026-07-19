@@ -572,7 +572,7 @@ function GreenScene() {
   const points = useMemo(() => result.points.filter((_, index) => index % 8 === 0).map((point) => [point.position[0] * greenScale, 0.13, point.position[1] * greenScale] as [number, number, number]), [result.points]);
   const rolloutPoints = useMemo(() => result.rolloutPoints.filter((_, index) => index % 8 === 0).map((point) => [point.position[0] * greenScale, 0.135, point.position[1] * greenScale] as [number, number, number]), [result.rolloutPoints]);
   const leavePoint = useMemo(() => [result.leave.position[0] * greenScale, 0.16, result.leave.position[1] * greenScale] as [number, number, number], [result.leave.position]);
-  const secondPuttPoints = useMemo(() => result.leave.distanceFt > 0.4 ? [leavePoint, [0, 0.16, 0] as [number, number, number]] : [], [leavePoint, result.leave.distanceFt]);
+  const secondPuttPoints = useMemo(() => result.secondPuttPoints.filter((_, index) => index % 8 === 0).map((point) => [point.position[0] * greenScale, 0.16, point.position[1] * greenScale] as [number, number, number]), [result.secondPuttPoints]);
   const cameraPoints = useMemo(() => [...points, ...rolloutPoints, ...secondPuttPoints], [points, rolloutPoints, secondPuttPoints]);
   const cameraTarget = useMemo(() => {
     const bounds = pathBounds(cameraPoints);
@@ -662,7 +662,7 @@ function GreenPanel() {
       <section className="leave-card" aria-label="second putt leave">
         <span>Second putt</span>
         <strong>{nf.format(result.leave.distanceFt)} ft · {result.leave.slopeRead}</strong>
-        <p>{result.leave.heightRead}, {result.leave.sideRead}. The dashed return line shows the next putt back to the cup.</p>
+        <p>{result.leave.heightRead}, {result.leave.sideRead}. The dashed return line simulates the next putt's break back to the cup.</p>
       </section>
       <div className="readouts" aria-live="polite">
         <Readout label="Lip speed" value={`${nf.format(result.lipSpeedMs)} m/s`} receipt={result.receipts.capture} />
