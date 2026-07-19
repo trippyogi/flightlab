@@ -149,7 +149,7 @@ export function simulateImpact(rawInputs: ImpactInputs): ImpactResult {
     points,
     receipts: {
       launch: `launchDir = ${params.launchBlend.toFixed(2)} * face + ${(1 - params.launchBlend).toFixed(2)} * path`,
-      spin: `spin = k * clubSpeed * sin(dynamicLoft - attackAngle); k=${params.spinK}`,
+      spin: `spin = k * clubSpeed * sin(spin loft); spin loft = dynamic loft - attack angle; k=${params.spinK}`,
       trajectory: 'RK4 at 1/240 s with gravity, Cd=0.22 drag, spin-ratio lift, 24 s spin decay',
       dPlane: `spin axis from D-plane normal plus linear gear-effect strike terms; face-to-path=${faceToPathDeg.toFixed(1)} deg`,
     },

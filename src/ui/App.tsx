@@ -284,6 +284,7 @@ function ImpactPanel() {
   const captureGhost = useLabStore((state) => state.captureGhost);
   const result = useMemo(() => simulateImpact(inputs), [inputs]);
   const manifest = modules.find((module) => module.id === 'impact')!;
+  const spinLoftDeg = inputs.dynamicLoftDeg - inputs.attackAngleDeg;
   const setClub = (club: ClubName) => {
     const defaults = clubDefaults[club];
     setImpactInput('club', club);
@@ -314,6 +315,10 @@ function ImpactPanel() {
       && Math.abs(inputs.clubPathDeg - curve.clubPathDeg) < 0.1
       && Math.abs(inputs.dynamicLoftDeg - (Number(defaults.dynamicLoftDeg ?? 0) + preset.loftOffsetDeg)) < 0.1;
   };
+  const setLaunchAngle = (launchAngleDeg: number) => {
+    const dynamicLoftDeg = (launchAngleDeg - inputs.attackAngleDeg * 0.18 - 1.8 - inputs.strikeY * 1.2) / 0.62;
+    setImpactInput('dynamicLoftDeg', Number(dynamicLoftDeg.toFixed(1)));
+  };
   return (
     <aside className="panel">
       <div className="segmented">
@@ -340,7 +345,7 @@ function ImpactPanel() {
       <Slider label="Attack" value={inputs.attackAngleDeg} min={-8} max={6} step={0.5} unit=" deg" onChange={(v) => setImpactInput('attackAngleDeg', v)} />
       <Slider label="Path" value={inputs.clubPathDeg} min={-8} max={8} step={0.5} unit=" deg" onChange={(v) => setImpactInput('clubPathDeg', v)} />
       <Slider label="Face" value={inputs.faceAngleDeg} min={-8} max={8} step={0.5} unit=" deg" onChange={(v) => setImpactInput('faceAngleDeg', v)} />
-      <Slider label="Loft" value={inputs.dynamicLoftDeg} min={8} max={54} step={0.5} unit=" deg" onChange={(v) => setImpactInput('dynamicLoftDeg', v)} />
+      <Slider label="Launch" value={result.launchAngleDeg} min={4} max={38} step={0.5} unit=" deg" onChange={setLaunchAngle} />
       <Slider label="Toe / heel" value={inputs.strikeX} min={-2} max={2} step={0.1} onChange={(v) => setImpactInput('strikeX', v)} />
       <div className="quick-grid">
         {flightPresets.map((preset) => (
@@ -364,6 +369,8 @@ function ImpactPanel() {
       </button>
       <div className="readouts" aria-live="polite">
         <Readout label="Ball speed" value={`${nf.format(result.ballSpeedMph)} mph`} receipt={result.receipts.launch} />
+        <Readout label="Launch" value={`${nf.format(result.launchAngleDeg)} deg`} receipt="Launch angle is exposed as the player-facing control; internally it solves dynamic loft from launch = dynamic loft * 0.62 + attack * 0.18 + strike height." />
+        <Readout label="Spin loft" value={`${nf.format(spinLoftDeg)} deg`} receipt="Spin loft = dynamic loft - attack angle. More spin loft raises spin and usually lowers smash." />
         <Readout label="Spin" value={`${Math.round(result.spinRpm)} rpm`} receipt={result.receipts.spin} />
         <Readout label="Spin axis" value={`${nf.format(result.spinAxisDeg)} deg`} receipt={result.receipts.dPlane} />
         <Readout label="Carry" value={`${nf.format(result.carryYd)} yd`} receipt={result.receipts.trajectory} />
