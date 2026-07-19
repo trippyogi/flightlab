@@ -1,6 +1,7 @@
 dist
 .vite
 node_modules
+qa-artifacts
 .env
 .env.local
 .DS_Store

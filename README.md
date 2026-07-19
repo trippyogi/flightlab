@@ -18,6 +18,9 @@ npm run dev
 npm test
 npm run lint
 npm run build
+npm run qa:visual
 ```
+
+Use `npm run qa:visual` before calling a view/camera/UI change ready. It starts a local Vite server, captures desktop and mobile screenshots for Impact Player/Top/Side and Green, fails on browser/page errors, and writes screenshots to `qa-artifacts/` for inspection.
 
 The sims are intentionally independent of three.js so the numbers can be reused by tests, future CLI tooling, and rendering layers.
