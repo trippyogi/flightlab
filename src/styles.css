@@ -351,6 +351,35 @@ input[type="range"] {
   background: #f4f7ef;
 }
 
+.leave-card {
+  display: grid;
+  gap: 4px;
+  padding: 12px;
+  border: 1px solid rgba(36, 65, 54, 0.22);
+  border-radius: 8px;
+  background:
+    linear-gradient(90deg, rgba(36, 65, 54, 0.1), transparent),
+    #f8efd9;
+}
+
+.leave-card span {
+  font-size: 11px;
+  text-transform: uppercase;
+  color: #586553;
+}
+
+.leave-card strong {
+  font-family: "IBM Plex Mono", ui-monospace, monospace;
+  color: var(--ink);
+}
+
+.leave-card p {
+  margin: 0;
+  font-size: 12px;
+  line-height: 1.35;
+  color: #4f5c4c;
+}
+
 .map-scale {
   display: grid;
   grid-template-columns: repeat(5, 1fr);

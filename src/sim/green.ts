@@ -15,9 +15,18 @@ export type RollPoint = {
   velocity: Vec2;
 };
 
+export type GreenLeave = {
+  position: Vec2;
+  distanceFt: number;
+  slopeRead: 'uphill' | 'downhill' | 'sidehill';
+  heightRead: 'above hole' | 'below hole' | 'level';
+  sideRead: 'high side' | 'low side' | 'center';
+};
+
 export type GreenResult = {
   points: RollPoint[];
   rolloutPoints: RollPoint[];
+  leave: GreenLeave;
   lipSpeedMs: number;
   captureRadiusM: number;
   missDistanceM: number;
@@ -91,9 +100,23 @@ export function simulateGreen(inputs: GreenInputs): GreenResult {
   const rolloutLast = rolloutPoints[rolloutPoints.length - 1] ?? last;
   const lineBreak = last.position[0] / ftToM;
   const stopPastFt = rolloutLast.position[1] / ftToM;
+  const fallUnit: Vec2 = [Math.sin(fall), Math.cos(fall)];
+  const toCup: Vec2 = [-rolloutLast.position[0], -rolloutLast.position[1]];
+  const leaveDistanceM = Math.hypot(toCup[0], toCup[1]);
+  const fallComponent = toCup[0] * fallUnit[0] + toCup[1] * fallUnit[1];
+  const slopeRead = Math.abs(fallComponent) < 0.05 ? 'sidehill' : fallComponent > 0 ? 'downhill' : 'uphill';
+  const sideRead = Math.abs(rolloutLast.position[0]) < 0.05 ? 'center' : rolloutLast.position[0] > 0 ? 'high side' : 'low side';
+  const heightRead = slopeRead === 'downhill' ? 'above hole' : slopeRead === 'uphill' ? 'below hole' : 'level';
   return {
     points,
     rolloutPoints,
+    leave: {
+      position: rolloutLast.position,
+      distanceFt: leaveDistanceM / ftToM,
+      slopeRead,
+      heightRead,
+      sideRead,
+    },
     lipSpeedMs,
     captureRadiusM: captureRadius(lipSpeedMs),
     missDistanceM: closest,

@@ -94,4 +94,20 @@ describe('simulateGreen', () => {
     expect(result.rolloutPoints.length).toBeGreaterThan(2);
     expect(result.stopPastFt).toBeGreaterThan(0);
   });
+
+  it('describes the second putt leave from the stop point', () => {
+    const result = simulateGreen({
+      distanceFt: 28,
+      slopePercent: 3,
+      slopeDirectionDeg: 0,
+      stimp: 12,
+      aimDeg: -8,
+      pacePastFt: 0.5,
+    });
+
+    expect(result.made).toBe(false);
+    expect(result.leave.distanceFt).toBeGreaterThan(0.5);
+    expect(['uphill', 'downhill', 'sidehill']).toContain(result.leave.slopeRead);
+    expect(['above hole', 'below hole', 'level']).toContain(result.leave.heightRead);
+  });
 });

@@ -432,6 +432,8 @@ function GreenScene() {
   const result = useMemo(() => simulateGreen(inputs), [inputs]);
   const points = result.points.filter((_, index) => index % 8 === 0).map((point) => [point.position[0] * greenScale, 0.13, point.position[1] * greenScale] as [number, number, number]);
   const rolloutPoints = result.rolloutPoints.filter((_, index) => index % 8 === 0).map((point) => [point.position[0] * greenScale, 0.135, point.position[1] * greenScale] as [number, number, number]);
+  const leavePoint = [result.leave.position[0] * greenScale, 0.16, result.leave.position[1] * greenScale] as [number, number, number];
+  const secondPuttPoints = result.leave.distanceFt > 0.4 ? [leavePoint, [0, 0.16, 0] as [number, number, number]] : [];
   const startZ = -inputs.distanceFt * ftToScene;
   return (
     <>
@@ -453,6 +455,13 @@ function GreenScene() {
       </mesh>
       <Trajectory points={points} color="#e86f23" opacity={0.98} scale={1} width={5} />
       {result.made && rolloutPoints.length > 1 ? <Trajectory points={rolloutPoints} color="#f8efd9" opacity={0.78} scale={1} width={3.6} dashed /> : null}
+      {secondPuttPoints.length > 1 ? <Trajectory points={secondPuttPoints} color="#244136" opacity={0.78} scale={1} width={3.2} dashed /> : null}
+      {secondPuttPoints.length > 1 ? (
+        <mesh position={leavePoint}>
+          <sphereGeometry args={[0.16, 24, 12]} />
+          <meshStandardMaterial color="#243f34" roughness={0.58} />
+        </mesh>
+      ) : null}
       <line>
         <bufferGeometry>
           <bufferAttribute attach="attributes-position" args={[new Float32Array([0, 0.11, startZ, 0, 0.11, 0]), 3]} />
@@ -504,6 +513,11 @@ function GreenPanel() {
           <span className="vector-swatch aim-line" />
           <p>Aim vector is {inputs.aimDeg === 0 ? 'straight at the cup' : `${nf.format(Math.abs(inputs.aimDeg))} deg ${inputs.aimDeg > 0 ? 'right' : 'left'}`}; expected break finishes {breakSide}.</p>
         </div>
+      </section>
+      <section className="leave-card" aria-label="second putt leave">
+        <span>Second putt</span>
+        <strong>{nf.format(result.leave.distanceFt)} ft · {result.leave.slopeRead}</strong>
+        <p>{result.leave.heightRead}, {result.leave.sideRead}. The dashed return line shows the next putt back to the cup.</p>
       </section>
       <div className="readouts" aria-live="polite">
         <Readout label="Lip speed" value={`${nf.format(result.lipSpeedMs)} m/s`} receipt={result.receipts.capture} />
