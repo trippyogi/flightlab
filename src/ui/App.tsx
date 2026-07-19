@@ -265,15 +265,15 @@ function ImpactScene() {
         <meshBasicMaterial color="#f8efd9" transparent opacity={0.18} />
       </mesh>
       <mesh rotation-x={-Math.PI / 2} position={[0, 0.02, targetZ]}>
-        <circleGeometry args={[8.8, 64]} />
+        <circleGeometry args={[13.5, 64]} />
         <meshStandardMaterial color="#8fa67f" roughness={0.86} />
       </mesh>
-      <mesh rotation-x={-Math.PI / 2} position={[-11, 0.035, targetZ - 2.5]}>
-        <circleGeometry args={[3.8, 40]} />
+      <mesh rotation-x={-Math.PI / 2} position={[-15.5, 0.035, targetZ - 3.6]}>
+        <circleGeometry args={[4.6, 40]} />
         <meshBasicMaterial color="#d7c58a" transparent opacity={0.94} />
       </mesh>
-      <mesh rotation-x={-Math.PI / 2} position={[10.5, 0.035, targetZ + 4.5]}>
-        <circleGeometry args={[4.6, 40]} />
+      <mesh rotation-x={-Math.PI / 2} position={[15, 0.035, targetZ + 5.5]}>
+        <circleGeometry args={[5.2, 40]} />
         <meshBasicMaterial color="#d7c58a" transparent opacity={0.9} />
       </mesh>
       {trees.map((tree) => (
