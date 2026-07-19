@@ -1,7 +1,7 @@
-import { Canvas } from '@react-three/fiber';
+import { Canvas, useThree } from '@react-three/fiber';
 import { Line, OrbitControls, Text } from '@react-three/drei';
 import { Activity, CircleDot, FlaskConical, Gauge, MessageSquare, Target } from 'lucide-react';
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { clsx } from 'clsx';
 import { clubDefaults, namedFlight, simulateImpact, type ClubName, type Handedness, type HolePar, type ImpactInputs } from '../sim/impact';
 import { simulateGreen } from '../sim/green';
@@ -16,11 +16,12 @@ const parDefaults: Record<HolePar, number> = { par3: 165, par4: 440, par5: 560 }
 const ydToImpactScene = 0.15;
 const impactLateralScale = -0.32;
 const feedbackEndpoint = import.meta.env.VITE_FEEDBACK_ENDPOINT as string | undefined;
-const impactCameraViews: Record<ImpactView, { label: string; position: [number, number, number]; target: [number, number, number]; fov: number }> = {
-  player: { label: 'Player', position: [0, 3.2, -24], target: [0, 4.5, 54], fov: 56 },
-  top: { label: 'Top', position: [0, 118, 58], target: [0, 0, 58], fov: 44 },
-  side: { label: 'Side', position: [-64, 18, 62], target: [0, 7, 64], fov: 52 },
+const impactCameraViews: Record<ImpactView, { label: string }> = {
+  player: { label: 'Player' },
+  top: { label: 'Top' },
+  side: { label: 'Side' },
 };
+const impactCameraFov: Record<ImpactView, number> = { player: 56, top: 46, side: 50 };
 
 function compassLabel(degrees: number) {
   const normalized = ((degrees % 360) + 360) % 360;
@@ -141,12 +142,51 @@ function Readout({ label, value, receipt }: { label: string; value: string; rece
   );
 }
 
+function impactCameraConfig(view: ImpactView, targetDistanceYd: number, carryYd: number) {
+  const shotDepth = Math.max(targetDistanceYd, carryYd + 35) * ydToImpactScene;
+  const midZ = shotDepth * 0.5;
+  if (view === 'top') {
+    return {
+      position: [0, Math.max(92, shotDepth * 1.28), midZ] as [number, number, number],
+      target: [0, 0, midZ] as [number, number, number],
+      up: [0, 0, 1] as [number, number, number],
+      maxPolar: 0.08,
+    };
+  }
+  if (view === 'side') {
+    return {
+      position: [-Math.max(58, shotDepth * 0.92), 18, midZ] as [number, number, number],
+      target: [0, 7, midZ] as [number, number, number],
+      up: [0, 1, 0] as [number, number, number],
+      maxPolar: Math.PI / 2.02,
+    };
+  }
+  return {
+    position: [0, 3.2, -24] as [number, number, number],
+    target: [0, 4.5, Math.min(72, shotDepth * 0.72)] as [number, number, number],
+    up: [0, 1, 0] as [number, number, number],
+    maxPolar: Math.PI / 2.02,
+  };
+}
+
+function ImpactCameraRig({ view, targetDistanceYd, carryYd }: { view: ImpactView; targetDistanceYd: number; carryYd: number }) {
+  const { camera } = useThree();
+  const config = useMemo(() => impactCameraConfig(view, targetDistanceYd, carryYd), [view, targetDistanceYd, carryYd]);
+  useEffect(() => {
+    camera.position.set(...config.position);
+    camera.up.set(...config.up);
+    camera.lookAt(...config.target);
+    camera.updateProjectionMatrix();
+  }, [camera, config]);
+  return null;
+}
+
 function ImpactScene() {
   const inputs = useLabStore((state) => state.impactInputs);
   const impactView = useLabStore((state) => state.impactView);
   const ghosts = useLabStore((state) => state.ghosts);
   const result = useMemo(() => simulateImpact(inputs), [inputs]);
-  const cameraView = impactCameraViews[impactView];
+  const cameraView = useMemo(() => impactCameraConfig(impactView, inputs.targetDistanceYd, result.carryYd), [impactView, inputs.targetDistanceYd, result.carryYd]);
   const sampled = result.points.filter((_, index) => index % 20 === 0).map((point) => point.position);
   const targetZ = inputs.targetDistanceYd * ydToImpactScene;
   const carryZ = result.carryYd * ydToImpactScene;
@@ -161,6 +201,7 @@ function ImpactScene() {
   }))), []);
   return (
     <>
+      <ImpactCameraRig view={impactView} targetDistanceYd={inputs.targetDistanceYd} carryYd={result.carryYd} />
       <ambientLight intensity={0.8} />
       <directionalLight position={[4, 8, 5]} intensity={1.6} />
       <mesh rotation-x={-Math.PI / 2} position={[0, -0.04, 52]}>
@@ -231,7 +272,7 @@ function ImpactScene() {
       <Text position={[result.offlineYd * impactLateralScale, 10, Math.min(85, result.carryYd * 0.55)]} rotation-y={Math.PI} fontSize={2.8} color="#f5f0e4">
         {namedFlight(inputs)}
       </Text>
-      <OrbitControls makeDefault enablePan={false} target={cameraView.target} maxPolarAngle={Math.PI / 2.02} />
+      <OrbitControls makeDefault enablePan={false} target={cameraView.target} maxPolarAngle={cameraView.maxPolar} />
     </>
   );
 }
@@ -673,7 +714,7 @@ export function App() {
   const activeManifest = modules.find((module) => module.id === activeModule);
   const camera = activeModule === 'green'
     ? { position: [0, 13, 15] as [number, number, number], fov: 48 }
-    : { position: impactCameraViews[impactView].position, fov: impactCameraViews[impactView].fov };
+    : { position: [0, 3.2, -24] as [number, number, number], fov: impactCameraFov[impactView] };
   return (
     <main className="app">
       <ModuleRail />

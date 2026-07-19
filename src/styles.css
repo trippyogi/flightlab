@@ -151,7 +151,7 @@ input {
 .view-switcher {
   position: absolute;
   right: 18px;
-  top: 50%;
+  top: 18px;
   z-index: 2;
   display: grid;
   gap: 6px;
@@ -160,7 +160,6 @@ input {
   border-radius: 8px;
   background: rgba(248, 239, 217, 0.82);
   box-shadow: 0 14px 28px -24px rgba(13, 17, 12, 0.8);
-  transform: translateY(-50%);
 }
 
 .view-switcher button {
@@ -728,10 +727,9 @@ input[type="range"] {
 
   .view-switcher {
     right: 12px;
-    top: auto;
-    bottom: 78px;
-    grid-template-columns: repeat(3, 1fr);
-    transform: none;
+    top: 72px;
+    bottom: auto;
+    grid-template-columns: 1fr;
   }
 
   .view-switcher button {
