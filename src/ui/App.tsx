@@ -120,6 +120,7 @@ function ImpactPanel() {
   const setImpactInput = useLabStore((state) => state.setImpactInput);
   const captureGhost = useLabStore((state) => state.captureGhost);
   const result = useMemo(() => simulateImpact(inputs), [inputs]);
+  const manifest = modules.find((module) => module.id === 'impact')!;
   const setClub = (club: ClubName) => {
     const defaults = clubDefaults[club];
     setImpactInput('club', club);
@@ -163,6 +164,7 @@ function ImpactPanel() {
         <Readout label="Carry" value={`${nf.format(result.carryYd)} yd`} receipt={result.receipts.trajectory} />
         <Readout label="Offline" value={`${nf.format(result.offlineYd)} yd`} />
       </div>
+      <ManifestNotes manifest={manifest} />
     </aside>
   );
 }
@@ -202,6 +204,7 @@ function GreenPanel() {
   const inputs = useLabStore((state) => state.greenInputs);
   const setGreenInput = useLabStore((state) => state.setGreenInput);
   const result = useMemo(() => simulateGreen(inputs), [inputs]);
+  const manifest = modules.find((module) => module.id === 'green')!;
   return (
     <aside className="panel">
       <Slider label="Distance" value={inputs.distanceFt} min={4} max={40} step={1} unit=" ft" onChange={(v) => setGreenInput('distanceFt', v)} />
@@ -217,7 +220,21 @@ function GreenPanel() {
         <Readout label="Break" value={`${nf.format(result.breakFt)} ft`} receipt={result.receipts.slope} />
         <Readout label="Stop" value={`${nf.format(result.stopPastFt)} ft`} receipt={result.receipts.friction} />
       </div>
+      <ManifestNotes manifest={manifest} />
     </aside>
+  );
+}
+
+function ManifestNotes({ manifest }: { manifest: NonNullable<(typeof modules)[number]> }) {
+  return (
+    <section className="manifest-notes" aria-label={`${manifest.title} manifest notes`}>
+      <h2>Receipts</h2>
+      <p>{manifest.receipts.join(' / ')}</p>
+      <h2>Sources</h2>
+      <p>{manifest.sources.join(' / ')}</p>
+      <h2>Log</h2>
+      <p>{manifest.changelog[0]}</p>
+    </section>
   );
 }
 

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { simulateImpact } from './impact';
+import { namedFlight, simulateImpact, type ImpactInputs } from './impact';
 
 describe('simulateImpact', () => {
   it('pins a centered driver reference shot', () => {
@@ -38,5 +38,22 @@ describe('simulateImpact', () => {
     expect(fade.spinAxisDeg).toBeGreaterThan(0);
     expect(draw.spinAxisDeg).toBeLessThan(0);
     expect(fade.spinRpm).toBeCloseTo(7000, -2);
+  });
+
+  it('names the teaching-flight families from face and path', () => {
+    const base: ImpactInputs = {
+      club: 'Driver',
+      clubSpeedMph: 113,
+      attackAngleDeg: 2,
+      clubPathDeg: 0,
+      faceAngleDeg: 0,
+      dynamicLoftDeg: 12,
+      strikeX: 0,
+      strikeY: 0,
+    };
+
+    expect(namedFlight(base)).toBe('straight');
+    expect(namedFlight({ ...base, faceAngleDeg: 4, clubPathDeg: 7 })).toBe('push-draw');
+    expect(namedFlight({ ...base, faceAngleDeg: -4, clubPathDeg: -7 })).toBe('pull-fade');
   });
 });

@@ -44,4 +44,25 @@ describe('simulateGreen', () => {
 
     expect(Math.abs(fast.breakFt)).toBeGreaterThan(Math.abs(slow.breakFt));
   });
+
+  it('shrinks the capture ring as delivery pace rises', () => {
+    const dying = simulateGreen({
+      distanceFt: 12,
+      slopePercent: 0,
+      slopeDirectionDeg: 90,
+      stimp: 10,
+      aimDeg: 0,
+      pacePastFt: 0.2,
+    });
+    const firm = simulateGreen({
+      distanceFt: 12,
+      slopePercent: 0,
+      slopeDirectionDeg: 90,
+      stimp: 10,
+      aimDeg: 0,
+      pacePastFt: 4,
+    });
+
+    expect(firm.captureRadiusM).toBeLessThan(dying.captureRadiusM);
+  });
 });
