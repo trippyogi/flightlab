@@ -9,6 +9,14 @@ import { modules } from '../modules/registry';
 import { useLabStore } from '../store/labStore';
 
 const nf = new Intl.NumberFormat('en-US', { maximumFractionDigits: 1 });
+const greenScale = 5;
+const ftToScene = 0.3048 * greenScale;
+const compassLabels = ['N', 'NE', 'E', 'SE', 'S', 'SW', 'W', 'NW'];
+
+function compassLabel(degrees: number) {
+  const normalized = ((degrees % 360) + 360) % 360;
+  return compassLabels[Math.round(normalized / 45) % compassLabels.length];
+}
 
 function ModuleRail() {
   const activeModule = useLabStore((state) => state.activeModule);
@@ -103,8 +111,8 @@ function ImpactScene() {
   );
 }
 
-function Trajectory({ points, color, opacity }: { points: readonly (readonly [number, number, number])[]; color: string; opacity: number }) {
-  const vertices = useMemo(() => new Float32Array(points.flatMap((point) => [point[0] * 0.15, point[1] * 0.15, point[2] * 0.15])), [points]);
+function Trajectory({ points, color, opacity, scale = 0.15 }: { points: readonly (readonly [number, number, number])[]; color: string; opacity: number; scale?: number }) {
+  const vertices = useMemo(() => new Float32Array(points.flatMap((point) => [point[0] * scale, point[1] * scale, point[2] * scale])), [points, scale]);
   return (
     <line>
       <bufferGeometry>
@@ -112,6 +120,77 @@ function Trajectory({ points, color, opacity }: { points: readonly (readonly [nu
       </bufferGeometry>
       <lineBasicMaterial color={color} transparent opacity={opacity} linewidth={4} />
     </line>
+  );
+}
+
+function SurfaceArrow({ position, rotationY, length, color, opacity }: { position: [number, number, number]; rotationY: number; length: number; color: string; opacity: number }) {
+  return (
+    <group position={position} rotation-y={rotationY}>
+      <line>
+        <bufferGeometry>
+          <bufferAttribute attach="attributes-position" args={[new Float32Array([0, 0, -length * 0.5, 0, 0, length * 0.5]), 3]} />
+        </bufferGeometry>
+        <lineBasicMaterial color={color} transparent opacity={opacity} />
+      </line>
+      <mesh position={[0, 0, length * 0.5]} rotation-x={Math.PI / 2}>
+        <coneGeometry args={[0.17, 0.46, 24]} />
+        <meshBasicMaterial color={color} transparent opacity={opacity} />
+      </mesh>
+    </group>
+  );
+}
+
+function GreenReadingMap({ distanceFt, slopePercent, slopeDirectionDeg, aimDeg }: { distanceFt: number; slopePercent: number; slopeDirectionDeg: number; aimDeg: number }) {
+  const fall = slopeDirectionDeg * Math.PI / 180;
+  const fallRotationY = fall;
+  const crossRotationY = fall + Math.PI / 2;
+  const arrowOpacity = 0.34 + Math.min(slopePercent, 6) * 0.07;
+  const bands = useMemo(() => {
+    const colors = ['#5b8fc1', '#79aebb', '#a8c59b', '#d8cf76', '#d59b57'];
+    return Array.from({ length: 9 }, (_, index) => {
+      const offset = (index - 4) * 2.85;
+      const colorIndex = Math.round((1 - index / 8) * (colors.length - 1));
+      return { offset, color: colors[colorIndex], opacity: 0.12 + slopePercent * 0.018 };
+    });
+  }, [slopePercent]);
+  const arrows = useMemo(() => {
+    const rows = [-9, -4.5, 0, 4.5, 9];
+    const cols = [-7, 0, 7];
+    return rows.flatMap((z) => cols.map((x) => [x, z] as const));
+  }, []);
+  const aimRotationY = aimDeg * Math.PI / 180;
+  const startZ = -distanceFt * ftToScene;
+  return (
+    <group position={[0, 0.075, 0]}>
+      <group rotation-y={fallRotationY}>
+        {bands.map((band) => (
+          <mesh key={band.offset} position={[0, 0, band.offset]} rotation-x={-Math.PI / 2}>
+            <planeGeometry args={[30, 2.55]} />
+            <meshBasicMaterial color={band.color} transparent opacity={band.opacity} depthWrite={false} />
+          </mesh>
+        ))}
+      </group>
+      <SurfaceArrow position={[0, 0.045, 0]} rotationY={fallRotationY} length={26} color="#173028" opacity={0.72} />
+      <group rotation-y={crossRotationY} position={[0, 0.035, 0]}>
+        <line>
+          <bufferGeometry>
+            <bufferAttribute attach="attributes-position" args={[new Float32Array([-14, 0, 0, 14, 0, 0]), 3]} />
+          </bufferGeometry>
+          <lineBasicMaterial color="#f6f2dc" transparent opacity={0.62} />
+        </line>
+      </group>
+      {arrows.map(([x, z]) => (
+        <SurfaceArrow
+          key={`${x}:${z}`}
+          position={[x, 0.04, z]}
+          rotationY={fallRotationY}
+          length={1.55 + slopePercent * 0.28}
+          color="#28453a"
+          opacity={arrowOpacity}
+        />
+      ))}
+      <SurfaceArrow position={[0, 0.08, startZ]} rotationY={aimRotationY} length={6} color="#ffb454" opacity={0.84} />
+    </group>
   );
 }
 
@@ -172,7 +251,8 @@ function ImpactPanel() {
 function GreenScene() {
   const inputs = useLabStore((state) => state.greenInputs);
   const result = useMemo(() => simulateGreen(inputs), [inputs]);
-  const points = result.points.filter((_, index) => index % 8 === 0).map((point) => [point.position[0] * 5, 0.06, point.position[1] * 5] as [number, number, number]);
+  const points = result.points.filter((_, index) => index % 8 === 0).map((point) => [point.position[0] * greenScale, 0.13, point.position[1] * greenScale] as [number, number, number]);
+  const startZ = -inputs.distanceFt * ftToScene;
   return (
     <>
       <ambientLight intensity={0.9} />
@@ -182,15 +262,22 @@ function GreenScene() {
         <meshStandardMaterial color="#88a281" roughness={0.88} />
       </mesh>
       <gridHelper args={[28, 14, '#eff4ec', '#a9b8a3']} position={[0, 0.04, 0]} />
+      <GreenReadingMap distanceFt={inputs.distanceFt} slopePercent={inputs.slopePercent} slopeDirectionDeg={inputs.slopeDirectionDeg} aimDeg={inputs.aimDeg} />
       <mesh position={[0, 0.07, 0]} rotation-x={-Math.PI / 2}>
-        <ringGeometry args={[result.captureRadiusM * 5, 0.29, 48]} />
+        <ringGeometry args={[result.captureRadiusM * greenScale, 0.29, 48]} />
         <meshBasicMaterial color="#ffb454" transparent opacity={0.84} />
       </mesh>
       <mesh position={[0, 0.045, 0]} rotation-x={-Math.PI / 2}>
         <circleGeometry args={[0.27, 48]} />
         <meshBasicMaterial color="#17201a" />
       </mesh>
-      <Trajectory points={points} color="#ffb454" opacity={0.96} />
+      <Trajectory points={points} color="#ffb454" opacity={0.96} scale={1} />
+      <line>
+        <bufferGeometry>
+          <bufferAttribute attach="attributes-position" args={[new Float32Array([0, 0.11, startZ, 0, 0.11, 0]), 3]} />
+        </bufferGeometry>
+        <lineBasicMaterial color="#f8f7ef" transparent opacity={0.56} />
+      </line>
       <mesh position={points[0]}>
         <sphereGeometry args={[0.18, 24, 12]} />
         <meshStandardMaterial color="#f8f7ef" />
@@ -205,6 +292,7 @@ function GreenPanel() {
   const setGreenInput = useLabStore((state) => state.setGreenInput);
   const result = useMemo(() => simulateGreen(inputs), [inputs]);
   const manifest = modules.find((module) => module.id === 'green')!;
+  const breakSide = result.breakFt > 0.05 ? 'right' : result.breakFt < -0.05 ? 'left' : 'center';
   return (
     <aside className="panel">
       <Slider label="Distance" value={inputs.distanceFt} min={4} max={40} step={1} unit=" ft" onChange={(v) => setGreenInput('distanceFt', v)} />
@@ -214,6 +302,28 @@ function GreenPanel() {
       <Slider label="Aim" value={inputs.aimDeg} min={-20} max={20} step={0.25} unit=" deg" onChange={(v) => setGreenInput('aimDeg', v)} />
       <Slider label="Pace" value={inputs.pacePastFt} min={0} max={4} step={0.1} unit=" ft past" onChange={(v) => setGreenInput('pacePastFt', v)} />
       <div className={clsx('result-chip', result.made && 'made')}>{result.made ? 'Captured' : 'Missed'}</div>
+      <section className="green-map-card" aria-label="green reading map legend">
+        <div className="map-scale" aria-hidden="true">
+          <span />
+          <span />
+          <span />
+          <span />
+          <span />
+        </div>
+        <div className="map-legend-row">
+          <span>lower</span>
+          <strong>{nf.format(inputs.slopePercent)}% fall {compassLabel(inputs.slopeDirectionDeg)}</strong>
+          <span>higher</span>
+        </div>
+        <div className="map-vector-row">
+          <span className="vector-swatch fall-line" />
+          <p>Fall line vectors point downhill; heat bands step from low blue through high amber.</p>
+        </div>
+        <div className="map-vector-row">
+          <span className="vector-swatch aim-line" />
+          <p>Aim vector is {inputs.aimDeg === 0 ? 'straight at the cup' : `${nf.format(Math.abs(inputs.aimDeg))} deg ${inputs.aimDeg > 0 ? 'right' : 'left'}`}; expected break finishes {breakSide}.</p>
+        </div>
+      </section>
       <div className="readouts" aria-live="polite">
         <Readout label="Lip speed" value={`${nf.format(result.lipSpeedMs)} m/s`} receipt={result.receipts.capture} />
         <Readout label="Capture" value={`${nf.format(result.captureRadiusM / 0.0254)} in`} receipt={result.receipts.capture} />
