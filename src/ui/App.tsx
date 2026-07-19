@@ -10,6 +10,26 @@ import { useLabStore } from '../store/labStore';
 
 const nf = new Intl.NumberFormat('en-US', { maximumFractionDigits: 1 });
 
+type FlightPreset = {
+  label: string;
+  start: 'pull' | 'straight' | 'push';
+  curve: 'draw' | 'straight' | 'fade';
+  faceAngleDeg: number;
+  clubPathDeg: number;
+};
+
+const flightPresets: FlightPreset[] = [
+  { label: 'Pull draw', start: 'pull', curve: 'draw', faceAngleDeg: -4, clubPathDeg: -1 },
+  { label: 'Pull straight', start: 'pull', curve: 'straight', faceAngleDeg: -4, clubPathDeg: -4 },
+  { label: 'Pull fade', start: 'pull', curve: 'fade', faceAngleDeg: -4, clubPathDeg: -7 },
+  { label: 'Straight draw', start: 'straight', curve: 'draw', faceAngleDeg: 0, clubPathDeg: 3 },
+  { label: 'Straight', start: 'straight', curve: 'straight', faceAngleDeg: 0, clubPathDeg: 0 },
+  { label: 'Straight fade', start: 'straight', curve: 'fade', faceAngleDeg: 0, clubPathDeg: -3 },
+  { label: 'Push draw', start: 'push', curve: 'draw', faceAngleDeg: 4, clubPathDeg: 7 },
+  { label: 'Push straight', start: 'push', curve: 'straight', faceAngleDeg: 4, clubPathDeg: 4 },
+  { label: 'Push fade', start: 'push', curve: 'fade', faceAngleDeg: 4, clubPathDeg: 1 },
+];
+
 function ModuleRail() {
   const activeModule = useLabStore((state) => state.activeModule);
   const setActiveModule = useLabStore((state) => state.setActiveModule);
@@ -95,10 +115,10 @@ function ImpactScene() {
         <Trajectory key={ghost.id} points={ghost.points} color="#ece4d3" opacity={0.26 - index * 0.025} width={2.6} />
       ))}
       <Trajectory points={sampled} color="#e86f23" opacity={0.98} width={5.2} />
-      <Text position={[result.offlineYd * 0.15, 10, Math.min(85, result.carryYd * 0.55)]} fontSize={2.8} color="#f5f0e4">
+      <Text position={[result.offlineYd * 0.15, 10, Math.min(85, result.carryYd * 0.55)]} rotation-y={Math.PI} fontSize={2.8} color="#f5f0e4">
         {namedFlight(inputs)}
       </Text>
-      <OrbitControls makeDefault enablePan={false} maxPolarAngle={Math.PI / 2.1} />
+      <OrbitControls makeDefault enablePan={false} target={[0, -13, 70]} maxPolarAngle={Math.PI / 2.1} />
     </>
   );
 }
@@ -135,14 +155,21 @@ function ImpactPanel() {
       <Slider label="Loft" value={inputs.dynamicLoftDeg} min={8} max={54} step={0.5} unit=" deg" onChange={(v) => setImpactInput('dynamicLoftDeg', v)} />
       <Slider label="Toe / heel" value={inputs.strikeX} min={-2} max={2} step={0.1} onChange={(v) => setImpactInput('strikeX', v)} />
       <div className="quick-grid">
-        {[
-          ['Pull draw', -4, -1],
-          ['Pull fade', -4, -7],
-          ['Straight', 0, 0],
-          ['Push draw', 4, 7],
-          ['Push fade', 4, 1],
-        ].map(([label, face, path]) => (
-          <button key={label} type="button" onClick={() => { setImpactInput('faceAngleDeg', Number(face)); setImpactInput('clubPathDeg', Number(path)); }}>{label}</button>
+        {flightPresets.map((preset) => (
+          <button
+            key={preset.label}
+            type="button"
+            className={clsx(
+              inputs.faceAngleDeg === preset.faceAngleDeg && inputs.clubPathDeg === preset.clubPathDeg && 'active',
+            )}
+            onClick={() => {
+              setImpactInput('faceAngleDeg', preset.faceAngleDeg);
+              setImpactInput('clubPathDeg', preset.clubPathDeg);
+            }}
+          >
+            <FlightPathIcon start={preset.start} curve={preset.curve} />
+            <span>{preset.label}</span>
+          </button>
         ))}
       </div>
       <button type="button" className="primary" onClick={() => captureGhost({
@@ -161,6 +188,21 @@ function ImpactPanel() {
       </div>
       <ManifestNotes manifest={manifest} />
     </aside>
+  );
+}
+
+function FlightPathIcon({ start, curve }: Pick<FlightPreset, 'start' | 'curve'>) {
+  const startX = start === 'pull' ? 20 : start === 'push' ? 44 : 32;
+  const endX = curve === 'draw' ? startX + 10 : curve === 'fade' ? startX - 10 : startX;
+  const controlX = curve === 'draw' ? startX - 2 : curve === 'fade' ? startX + 2 : startX;
+  const path = `M ${startX} 52 C ${controlX} 37, ${endX} 25, ${endX} 12`;
+
+  return (
+    <svg className="flight-icon" viewBox="0 0 64 64" aria-hidden="true">
+      <path className="flight-icon-grid" d="M10 54H54M18 46H46M25 38H39" />
+      <path className="flight-icon-path" d={path} />
+      <path className="flight-icon-arrow" d={`M ${endX - 4} 18 L ${endX} 10 L ${endX + 4} 18`} />
+    </svg>
   );
 }
 
@@ -250,7 +292,7 @@ export function App() {
       <ModuleRail />
       <section className="stage">
         <div className="scene">
-          <Canvas camera={{ position: activeModule === 'green' ? [0, 13, 15] : [0, 16, 35], fov: 48 }} dpr={[1, 1.75]}>
+          <Canvas camera={{ position: activeModule === 'green' ? [0, 13, 15] : [0, 4.2, -22], fov: activeModule === 'green' ? 48 : 54 }} dpr={[1, 1.75]}>
             {activeModule === 'impact' ? <ImpactScene /> : activeModule === 'green' ? <GreenScene /> : null}
           </Canvas>
         </div>

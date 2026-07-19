@@ -225,7 +225,49 @@ input[type="range"] {
 }
 
 .quick-grid {
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.quick-grid button {
+  display: grid;
+  gap: 4px;
+  place-items: center;
+  min-height: 0;
+  aspect-ratio: 1;
+  padding: 7px 5px;
+  font-size: 11px;
+  line-height: 1.1;
+  text-align: center;
+}
+
+.quick-grid button.active {
+  border-color: #e69b3f;
+  background: #fff1d8;
+}
+
+.flight-icon {
+  width: min(42px, 72%);
+  height: auto;
+  overflow: visible;
+}
+
+.flight-icon-grid,
+.flight-icon-path,
+.flight-icon-arrow {
+  fill: none;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.flight-icon-grid {
+  stroke: rgba(28, 36, 31, 0.18);
+  stroke-width: 2;
+}
+
+.flight-icon-path,
+.flight-icon-arrow {
+  stroke: #1f2b23;
+  stroke-width: 4;
 }
 
 .primary {
@@ -363,5 +405,9 @@ input[type="range"] {
     max-height: none;
     border-left: 0;
     border-top: 1px solid rgba(28, 36, 31, 0.14);
+  }
+
+  .quick-grid {
+    grid-template-columns: repeat(3, minmax(72px, 1fr));
   }
 }
