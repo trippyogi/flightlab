@@ -2,10 +2,13 @@ import { add3, clamp, cross3, degToRad, dot3, mag3, norm3, radToDeg, scale3, typ
 
 export type ClubName = 'Driver' | '6-iron' | 'Wedge';
 export type Handedness = 'right' | 'left';
+export type HolePar = 'par3' | 'par4' | 'par5';
 
 export type ImpactInputs = {
   club: ClubName;
   handedness: Handedness;
+  holePar: HolePar;
+  targetDistanceYd: number;
   clubSpeedMph: number;
   attackAngleDeg: number;
   clubPathDeg: number;

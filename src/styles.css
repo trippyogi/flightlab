@@ -498,7 +498,7 @@ input[type="range"] {
 
   .app {
     grid-template-columns: 68px minmax(0, 1fr);
-    grid-template-rows: minmax(52vh, 1fr) auto;
+    grid-template-rows: minmax(58vh, 1fr) auto;
   }
 
   .module-rail {
@@ -512,7 +512,21 @@ input[type="range"] {
   }
 
   .stage {
-    min-height: 52vh;
+    min-height: 58vh;
+  }
+
+  .hud {
+    top: 14px;
+    left: 18px;
+    gap: 9px;
+  }
+
+  .hud span {
+    font-size: 12px;
+  }
+
+  .hud strong {
+    font-size: 26px;
   }
 
   .panel {

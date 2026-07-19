@@ -3,7 +3,7 @@ import { Line, OrbitControls, Text } from '@react-three/drei';
 import { Activity, CircleDot, FlaskConical, Gauge, Target } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import { clsx } from 'clsx';
-import { clubDefaults, namedFlight, simulateImpact, type ClubName, type Handedness, type ImpactInputs } from '../sim/impact';
+import { clubDefaults, namedFlight, simulateImpact, type ClubName, type Handedness, type HolePar, type ImpactInputs } from '../sim/impact';
 import { simulateGreen } from '../sim/green';
 import { modules } from '../modules/registry';
 import { useLabStore } from '../store/labStore';
@@ -12,6 +12,8 @@ const nf = new Intl.NumberFormat('en-US', { maximumFractionDigits: 1 });
 const greenScale = 5;
 const ftToScene = 0.3048 * greenScale;
 const compassLabels = ['N', 'NE', 'E', 'SE', 'S', 'SW', 'W', 'NW'];
+const parDefaults: Record<HolePar, number> = { par3: 165, par4: 440, par5: 560 };
+const ydToImpactScene = 0.15;
 
 function compassLabel(degrees: number) {
   const normalized = ((degrees % 360) + 360) % 360;
@@ -109,15 +111,58 @@ function ImpactScene() {
   const ghosts = useLabStore((state) => state.ghosts);
   const result = useMemo(() => simulateImpact(inputs), [inputs]);
   const sampled = result.points.filter((_, index) => index % 20 === 0).map((point) => point.position);
+  const targetZ = inputs.targetDistanceYd * ydToImpactScene;
+  const carryZ = result.carryYd * ydToImpactScene;
+  const landingX = result.offlineYd * ydToImpactScene;
+  const dispersionWidthYd = Math.round(Math.max(16, result.carryYd * (inputs.club === 'Driver' ? 0.12 : inputs.club === '6-iron' ? 0.09 : 0.07)));
+  const dispersionHalfX = (dispersionWidthYd / 2) * ydToImpactScene;
+  const dispersionDepth = Math.max(9, result.carryYd * 0.045) * ydToImpactScene;
+  const trees = useMemo(() => [-1, 1].flatMap((side) => [70, 120, 175, 235, 305, 385, 485].map((z, index) => ({
+    x: side * (23 + (index % 3) * 5),
+    z: z * ydToImpactScene,
+    h: 3.8 + (index % 4) * 0.55,
+  }))), []);
   return (
     <>
       <ambientLight intensity={0.8} />
       <directionalLight position={[4, 8, 5]} intensity={1.6} />
-      <mesh rotation-x={-Math.PI / 2} position={[0, -0.02, 115]}>
-        <planeGeometry args={[90, 260]} />
+      <mesh rotation-x={-Math.PI / 2} position={[0, -0.04, 52]}>
+        <planeGeometry args={[96, 126]} />
+        <meshStandardMaterial color="#4f6649" roughness={0.94} />
+      </mesh>
+      <mesh rotation-x={-Math.PI / 2} position={[0, -0.02, 47]}>
+        <planeGeometry args={[34, 104]} />
         <meshStandardMaterial color="#6f8468" roughness={0.92} metalness={0.02} />
       </mesh>
-      <gridHelper args={[90, 18, '#f5f0e4', '#9aaa91']} position={[0, 0, 115]} />
+      <mesh rotation-x={-Math.PI / 2} position={[0, 0.015, -1]}>
+        <circleGeometry args={[3.2, 48]} />
+        <meshBasicMaterial color="#f8efd9" transparent opacity={0.18} />
+      </mesh>
+      <mesh rotation-x={-Math.PI / 2} position={[0, 0.02, targetZ]}>
+        <circleGeometry args={[8.8, 64]} />
+        <meshStandardMaterial color="#8fa67f" roughness={0.86} />
+      </mesh>
+      <mesh rotation-x={-Math.PI / 2} position={[-11, 0.035, targetZ - 2.5]}>
+        <circleGeometry args={[3.8, 40]} />
+        <meshBasicMaterial color="#d7c58a" transparent opacity={0.94} />
+      </mesh>
+      <mesh rotation-x={-Math.PI / 2} position={[10.5, 0.035, targetZ + 4.5]}>
+        <circleGeometry args={[4.6, 40]} />
+        <meshBasicMaterial color="#d7c58a" transparent opacity={0.9} />
+      </mesh>
+      {trees.map((tree) => (
+        <group key={`${tree.x}:${tree.z}`} position={[tree.x, 0, tree.z]}>
+          <mesh position={[0, tree.h * 0.24, 0]}>
+            <cylinderGeometry args={[0.22, 0.32, tree.h * 0.48, 8]} />
+            <meshStandardMaterial color="#4d3324" roughness={0.9} />
+          </mesh>
+          <mesh position={[0, tree.h * 0.68, 0]}>
+            <coneGeometry args={[1.7, tree.h, 8]} />
+            <meshStandardMaterial color="#22351f" roughness={0.94} />
+          </mesh>
+        </group>
+      ))}
+      <gridHelper args={[86, 18, '#f5f0e4', '#9aaa91']} position={[0, 0.01, 47]} />
       <mesh position={[0, 0.25, 0]}>
         <sphereGeometry args={[0.32, 32, 16]} />
         <meshStandardMaterial color="#f7f1e3" roughness={0.46} />
@@ -130,10 +175,26 @@ function ImpactScene() {
         <Trajectory key={ghost.id} points={ghost.points} color="#ece4d3" opacity={0.26 - index * 0.025} width={2.6} />
       ))}
       <Trajectory points={sampled} color="#e86f23" opacity={0.98} width={5.2} />
+      <mesh position={[landingX, 0.12, carryZ]} rotation-x={-Math.PI / 2} scale={[dispersionHalfX, dispersionDepth, 1]}>
+        <ringGeometry args={[0.9, 1, 72]} />
+        <meshBasicMaterial color="#f8efd9" transparent opacity={0.78} />
+      </mesh>
+      <line>
+        <bufferGeometry>
+          <bufferAttribute attach="attributes-position" args={[new Float32Array([landingX - dispersionHalfX, 0.18, carryZ, landingX + dispersionHalfX, 0.18, carryZ]), 3]} />
+        </bufferGeometry>
+        <lineBasicMaterial color="#f8efd9" transparent opacity={0.72} />
+      </line>
+      <Text position={[landingX, 1.45, carryZ]} rotation-y={Math.PI} fontSize={1.55} color="#f8efd9">
+        {dispersionWidthYd} yd window
+      </Text>
+      <Text position={[0, 1.2, targetZ]} rotation-y={Math.PI} fontSize={1.55} color="#f8efd9">
+        {inputs.holePar.replace('par', 'Par ')} · {inputs.targetDistanceYd} yd
+      </Text>
       <Text position={[result.offlineYd * 0.15, 10, Math.min(85, result.carryYd * 0.55)]} rotation-y={Math.PI} fontSize={2.8} color="#f5f0e4">
         {namedFlight(inputs)}
       </Text>
-      <OrbitControls makeDefault enablePan={false} target={[0, 8, 82]} maxPolarAngle={Math.PI / 2.1} />
+      <OrbitControls makeDefault enablePan={false} target={[0, 4.5, 54]} maxPolarAngle={Math.PI / 2.1} />
     </>
   );
 }
@@ -233,6 +294,10 @@ function ImpactPanel() {
     setImpactInput('faceAngleDeg', -inputs.faceAngleDeg);
     setImpactInput('clubPathDeg', -inputs.clubPathDeg);
   };
+  const setPar = (holePar: HolePar) => {
+    setImpactInput('holePar', holePar);
+    setImpactInput('targetDistanceYd', parDefaults[holePar]);
+  };
   const setTigerPreset = (preset: FlightPreset) => {
     const defaults = clubDefaults[inputs.club];
     const curve = curveAngles(preset.curve, inputs.handedness);
@@ -262,6 +327,14 @@ function ImpactPanel() {
           </button>
         ))}
       </div>
+      <div className="segmented par-toggle" aria-label="hole par">
+        {(['par3', 'par4', 'par5'] as HolePar[]).map((holePar) => (
+          <button key={holePar} type="button" className={clsx(inputs.holePar === holePar && 'active')} onClick={() => setPar(holePar)}>
+            {holePar.replace('par', 'Par ')}
+          </button>
+        ))}
+      </div>
+      <Slider label="Hole" value={inputs.targetDistanceYd} min={90} max={650} step={5} unit=" yd" onChange={(v) => setImpactInput('targetDistanceYd', v)} />
       <Slider label="Club speed" value={inputs.clubSpeedMph} min={60} max={125} unit=" mph" onChange={(v) => setImpactInput('clubSpeedMph', v)} />
       <Slider label="Attack" value={inputs.attackAngleDeg} min={-8} max={6} step={0.5} unit=" deg" onChange={(v) => setImpactInput('attackAngleDeg', v)} />
       <Slider label="Path" value={inputs.clubPathDeg} min={-8} max={8} step={0.5} unit=" deg" onChange={(v) => setImpactInput('clubPathDeg', v)} />

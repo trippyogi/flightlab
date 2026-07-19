@@ -6,6 +6,8 @@ describe('simulateImpact', () => {
     const result = simulateImpact({
       club: 'Driver',
       handedness: 'right',
+      holePar: 'par4',
+      targetDistanceYd: 440,
       clubSpeedMph: 113,
       attackAngleDeg: 2,
       clubPathDeg: 0,
@@ -27,6 +29,8 @@ describe('simulateImpact', () => {
     const fade = simulateImpact({
       club: '6-iron',
       handedness: 'right',
+      holePar: 'par4',
+      targetDistanceYd: 440,
       clubSpeedMph: 92,
       attackAngleDeg: -3.5,
       clubPathDeg: -2,
@@ -46,6 +50,8 @@ describe('simulateImpact', () => {
     const base: ImpactInputs = {
       club: 'Driver',
       handedness: 'right',
+      holePar: 'par4',
+      targetDistanceYd: 440,
       clubSpeedMph: 113,
       attackAngleDeg: 2,
       clubPathDeg: 0,

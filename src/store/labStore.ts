@@ -26,6 +26,8 @@ export const useLabStore = create<LabState>((set) => ({
   impactInputs: {
     club: 'Driver',
     handedness: 'right',
+    holePar: 'par4',
+    targetDistanceYd: 440,
     clubSpeedMph: 113,
     attackAngleDeg: 2,
     clubPathDeg: -3.5,
