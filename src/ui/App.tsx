@@ -713,7 +713,7 @@ export function App() {
   const impactView = useLabStore((state) => state.impactView);
   const activeManifest = modules.find((module) => module.id === activeModule);
   const camera = activeModule === 'green'
-    ? { position: [0, 13, 15] as [number, number, number], fov: 48 }
+    ? { position: [0, 13, -15] as [number, number, number], fov: 48 }
     : { position: [0, 3.2, -24] as [number, number, number], fov: impactCameraFov[impactView] };
   return (
     <main className="app">
