@@ -6,7 +6,7 @@ import { clsx } from 'clsx';
 import { clubDefaults, namedFlight, simulateImpact, type ClubName, type Handedness, type HolePar, type ImpactInputs } from '../sim/impact';
 import { simulateGreen } from '../sim/green';
 import { modules } from '../modules/registry';
-import { useLabStore } from '../store/labStore';
+import { useLabStore, type ImpactView } from '../store/labStore';
 
 const nf = new Intl.NumberFormat('en-US', { maximumFractionDigits: 1 });
 const greenScale = 5;
@@ -16,6 +16,11 @@ const parDefaults: Record<HolePar, number> = { par3: 165, par4: 440, par5: 560 }
 const ydToImpactScene = 0.15;
 const impactLateralScale = -0.32;
 const feedbackEndpoint = import.meta.env.VITE_FEEDBACK_ENDPOINT as string | undefined;
+const impactCameraViews: Record<ImpactView, { label: string; position: [number, number, number]; target: [number, number, number]; fov: number }> = {
+  player: { label: 'Player', position: [0, 3.2, -24], target: [0, 4.5, 54], fov: 56 },
+  top: { label: 'Top', position: [0, 118, 58], target: [0, 0, 58], fov: 44 },
+  side: { label: 'Side', position: [-64, 18, 62], target: [0, 7, 64], fov: 52 },
+};
 
 function compassLabel(degrees: number) {
   const normalized = ((degrees % 360) + 360) % 360;
@@ -77,6 +82,28 @@ function ModuleRail() {
   );
 }
 
+function ViewSwitcher() {
+  const activeModule = useLabStore((state) => state.activeModule);
+  const impactView = useLabStore((state) => state.impactView);
+  const setImpactView = useLabStore((state) => state.setImpactView);
+  if (activeModule !== 'impact') return null;
+  return (
+    <div className="view-switcher" aria-label="impact camera view">
+      {(Object.keys(impactCameraViews) as ImpactView[]).map((view) => (
+        <button
+          key={view}
+          type="button"
+          className={clsx(impactView === view && 'active')}
+          aria-pressed={impactView === view}
+          onClick={() => setImpactView(view)}
+        >
+          {impactCameraViews[view].label}
+        </button>
+      ))}
+    </div>
+  );
+}
+
 type SliderProps = {
   label: string;
   value: number;
@@ -116,8 +143,10 @@ function Readout({ label, value, receipt }: { label: string; value: string; rece
 
 function ImpactScene() {
   const inputs = useLabStore((state) => state.impactInputs);
+  const impactView = useLabStore((state) => state.impactView);
   const ghosts = useLabStore((state) => state.ghosts);
   const result = useMemo(() => simulateImpact(inputs), [inputs]);
+  const cameraView = impactCameraViews[impactView];
   const sampled = result.points.filter((_, index) => index % 20 === 0).map((point) => point.position);
   const targetZ = inputs.targetDistanceYd * ydToImpactScene;
   const carryZ = result.carryYd * ydToImpactScene;
@@ -202,7 +231,7 @@ function ImpactScene() {
       <Text position={[result.offlineYd * impactLateralScale, 10, Math.min(85, result.carryYd * 0.55)]} rotation-y={Math.PI} fontSize={2.8} color="#f5f0e4">
         {namedFlight(inputs)}
       </Text>
-      <OrbitControls makeDefault enablePan={false} target={[0, 4.5, 54]} maxPolarAngle={Math.PI / 2.1} />
+      <OrbitControls makeDefault enablePan={false} target={cameraView.target} maxPolarAngle={Math.PI / 2.02} />
     </>
   );
 }
@@ -640,16 +669,21 @@ function FeedbackDock() {
 
 export function App() {
   const activeModule = useLabStore((state) => state.activeModule);
+  const impactView = useLabStore((state) => state.impactView);
   const activeManifest = modules.find((module) => module.id === activeModule);
+  const camera = activeModule === 'green'
+    ? { position: [0, 13, 15] as [number, number, number], fov: 48 }
+    : { position: impactCameraViews[impactView].position, fov: impactCameraViews[impactView].fov };
   return (
     <main className="app">
       <ModuleRail />
       <section className="stage">
         <div className="scene">
-          <Canvas camera={{ position: activeModule === 'green' ? [0, 13, 15] : [0, 3.2, -24], fov: activeModule === 'green' ? 48 : 56 }} dpr={[1, 1.75]}>
+          <Canvas key={`${activeModule}-${impactView}`} camera={camera} dpr={[1, 1.75]}>
             {activeModule === 'impact' ? <ImpactScene /> : activeModule === 'green' ? <GreenScene /> : null}
           </Canvas>
         </div>
+        <ViewSwitcher />
         <header className="hud">
           <span>flightlab</span>
           <strong>{activeManifest?.title}</strong>

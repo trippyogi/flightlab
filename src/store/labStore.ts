@@ -3,6 +3,7 @@ import type { GreenInputs } from '../sim/green';
 import type { ImpactInputs } from '../sim/impact';
 
 export type ModuleId = 'impact' | 'green' | 'gained';
+export type ImpactView = 'player' | 'top' | 'side';
 
 export type GhostTrace = {
   id: string;
@@ -12,10 +13,12 @@ export type GhostTrace = {
 
 type LabState = {
   activeModule: ModuleId;
+  impactView: ImpactView;
   impactInputs: ImpactInputs;
   greenInputs: GreenInputs;
   ghosts: GhostTrace[];
   setActiveModule: (activeModule: ModuleId) => void;
+  setImpactView: (impactView: ImpactView) => void;
   setImpactInput: <K extends keyof ImpactInputs>(key: K, value: ImpactInputs[K]) => void;
   setGreenInput: <K extends keyof GreenInputs>(key: K, value: GreenInputs[K]) => void;
   captureGhost: (ghost: GhostTrace) => void;
@@ -23,6 +26,7 @@ type LabState = {
 
 export const useLabStore = create<LabState>((set) => ({
   activeModule: 'impact',
+  impactView: 'player',
   impactInputs: {
     club: 'Driver',
     handedness: 'right',
@@ -46,6 +50,7 @@ export const useLabStore = create<LabState>((set) => ({
   },
   ghosts: [],
   setActiveModule: (activeModule) => set({ activeModule }),
+  setImpactView: (impactView) => set({ impactView }),
   setImpactInput: (key, value) =>
     set((state) => ({ impactInputs: { ...state.impactInputs, [key]: value } })),
   setGreenInput: (key, value) =>
