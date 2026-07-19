@@ -635,7 +635,7 @@ function GreenPanel() {
       <Slider label="Fall line" value={inputs.slopeDirectionDeg} min={0} max={360} step={5} unit=" deg" onChange={(v) => setGreenInput('slopeDirectionDeg', v)} />
       <Slider label="Stimp" value={inputs.stimp} min={6} max={14} step={0.5} onChange={(v) => setGreenInput('stimp', v)} />
       <Slider label="Aim" value={inputs.aimDeg} min={-20} max={20} step={0.25} unit=" deg" onChange={(v) => setGreenInput('aimDeg', v)} />
-      <Slider label="Pace" value={inputs.pacePastFt} min={0} max={4} step={0.1} unit=" ft past" onChange={(v) => setGreenInput('pacePastFt', v)} />
+      <Slider label="Pace" value={inputs.pacePastFt} min={-6} max={6} step={0.1} unit=" ft" onChange={(v) => setGreenInput('pacePastFt', v)} />
       <div className={clsx('result-chip', result.made && 'made')}>{result.made ? 'Captured' : 'Missed'}</div>
       <section className="green-map-card" aria-label="green reading map legend">
         <div className="map-scale" aria-hidden="true">
