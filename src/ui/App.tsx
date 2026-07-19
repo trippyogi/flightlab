@@ -149,7 +149,7 @@ function impactCameraConfig(view: ImpactView, targetDistanceYd: number, carryYd:
     return {
       position: [0, Math.max(92, shotDepth * 1.28), midZ] as [number, number, number],
       target: [0, 0, midZ] as [number, number, number],
-      up: [0, 0, 1] as [number, number, number],
+      up: [0, 0, -1] as [number, number, number],
       maxPolar: 0.08,
     };
   }
