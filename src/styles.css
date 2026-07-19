@@ -11,8 +11,9 @@
   --paper: #ede9dc;
   --line: rgba(23, 28, 23, 0.16);
   --line-strong: rgba(23, 28, 23, 0.28);
-  --amber: #d99a34;
-  --amber-soft: #f2c36a;
+  --amber: #e86f23;
+  --amber-soft: #f2a04d;
+  --tan: #b88b55;
   --shadow: rgba(18, 24, 17, 0.16);
   background: var(--sage-300);
   color: var(--ink);
@@ -53,7 +54,7 @@ input {
   padding: 18px 12px;
   border-right: 1px solid var(--line-strong);
   background:
-    radial-gradient(circle at 50% 14px, rgba(242, 195, 106, 0.26) 0 2px, transparent 3px 100%),
+    radial-gradient(circle at 50% 14px, rgba(232, 111, 35, 0.24) 0 2px, transparent 3px 100%),
     linear-gradient(180deg, #eff0e6, #d9e0d4);
 }
 
@@ -91,7 +92,7 @@ input {
 }
 
 .rail-button.active {
-  border-color: rgba(217, 154, 52, 0.88);
+  border-color: rgba(232, 111, 35, 0.88);
   background: var(--chalk);
   color: var(--ink);
   box-shadow: 0 7px 18px -14px var(--shadow);
@@ -186,8 +187,9 @@ input {
 
 .segmented button.active {
   background: var(--amber);
-  border-color: #b77c26;
+  border-color: #b95418;
   color: #17120b;
+  box-shadow: 0 0 0 1px rgba(23, 28, 23, 0.08) inset, 0 8px 18px -15px rgba(232, 111, 35, 0.9);
 }
 
 .segmented button:hover,
@@ -239,6 +241,7 @@ input[type="range"] {
 
 .primary:hover {
   background: #111510;
+  border-color: var(--tan);
 }
 
 .readouts {

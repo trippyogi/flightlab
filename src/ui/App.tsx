@@ -94,7 +94,7 @@ function ImpactScene() {
       {ghosts.map((ghost, index) => (
         <Trajectory key={ghost.id} points={ghost.points} color="#ece4d3" opacity={0.26 - index * 0.025} />
       ))}
-      <Trajectory points={sampled} color="#d99a34" opacity={0.96} />
+      <Trajectory points={sampled} color="#e86f23" opacity={0.98} />
       <Text position={[result.offlineYd * 0.15, 10, Math.min(85, result.carryYd * 0.55)]} fontSize={2.8} color="#f5f0e4">
         {namedFlight(inputs)}
       </Text>
@@ -184,13 +184,13 @@ function GreenScene() {
       <gridHelper args={[28, 14, '#f5f0e4', '#9bae93']} position={[0, 0.04, 0]} />
       <mesh position={[0, 0.07, 0]} rotation-x={-Math.PI / 2}>
         <ringGeometry args={[result.captureRadiusM * 5, 0.29, 48]} />
-        <meshBasicMaterial color="#d99a34" transparent opacity={0.88} />
+        <meshBasicMaterial color="#e86f23" transparent opacity={0.9} />
       </mesh>
       <mesh position={[0, 0.045, 0]} rotation-x={-Math.PI / 2}>
         <circleGeometry args={[0.27, 48]} />
         <meshBasicMaterial color="#171c17" />
       </mesh>
-      <Trajectory points={points} color="#d99a34" opacity={0.96} />
+      <Trajectory points={points} color="#e86f23" opacity={0.98} />
       <mesh position={points[0]}>
         <sphereGeometry args={[0.18, 24, 12]} />
         <meshStandardMaterial color="#f7f1e3" roughness={0.48} />
