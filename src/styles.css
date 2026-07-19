@@ -727,13 +727,16 @@ input[type="range"] {
 
   .view-switcher {
     right: 12px;
-    top: 72px;
+    top: 12px;
     bottom: auto;
     grid-template-columns: 1fr;
+    gap: 4px;
+    padding: 4px;
   }
 
   .view-switcher button {
-    min-width: 54px;
+    min-width: 52px;
+    min-height: 30px;
   }
 
   .feedback-dock {
