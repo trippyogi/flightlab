@@ -55,6 +55,16 @@ function curveAngles(curve: FlightPreset['curve'], handedness: Handedness) {
   return { faceAngleDeg: 0, clubPathDeg: 0 };
 }
 
+function activeFlightPreset(input: ImpactInputs) {
+  return flightPresets.find((preset) => {
+    const curve = curveAngles(preset.curve, input.handedness);
+    const defaults = clubDefaults[input.club];
+    return Math.abs(input.faceAngleDeg - curve.faceAngleDeg) < 0.1
+      && Math.abs(input.clubPathDeg - curve.clubPathDeg) < 0.1
+      && Math.abs(input.dynamicLoftDeg - (Number(defaults.dynamicLoftDeg ?? 0) + preset.loftOffsetDeg)) < 0.1;
+  });
+}
+
 function directionalLabel(degrees: number, handedness: Handedness, positiveLabel: string, negativeLabel: string) {
   const relative = degrees * (handedness === 'left' ? -1 : 1);
   if (Math.abs(relative) < 0.4) return 'neutral';
@@ -219,6 +229,8 @@ function ImpactScene() {
   const ghosts = useLabStore((state) => state.ghosts);
   const result = useMemo(() => simulateImpact(inputs), [inputs]);
   const cameraView = useMemo(() => impactCameraConfig(impactView, inputs.targetDistanceYd, result.carryYd), [impactView, inputs.targetDistanceYd, result.carryYd]);
+  const flightLabel = activeFlightPreset(inputs)?.label ?? namedFlight(inputs);
+  const sceneTextRotationY = impactView === 'top' ? 0 : Math.PI;
   const sampled = result.points.filter((_, index) => index % 20 === 0).map((point) => point.position);
   const targetZ = inputs.targetDistanceYd * ydToImpactScene;
   const carryZ = result.carryYd * ydToImpactScene;
@@ -295,14 +307,14 @@ function ImpactScene() {
         </bufferGeometry>
         <lineBasicMaterial color="#f8efd9" transparent opacity={0.72} />
       </line>
-      <Text position={[landingX, 1.45, carryZ]} rotation-y={Math.PI} fontSize={1.55} color="#f8efd9">
+      <Text position={[landingX, 1.45, carryZ]} rotation-y={sceneTextRotationY} fontSize={1.55} color="#f8efd9">
         {dispersionWidthYd} yd window
       </Text>
-      <Text position={[0, 1.2, targetZ]} rotation-y={Math.PI} fontSize={1.55} color="#f8efd9">
+      <Text position={[0, 1.2, targetZ]} rotation-y={sceneTextRotationY} fontSize={1.55} color="#f8efd9">
         {inputs.holePar.replace('par', 'Par ')} · {inputs.targetDistanceYd} yd
       </Text>
-      <Text position={[result.offlineYd * impactLateralScale, 10, Math.min(85, result.carryYd * 0.55)]} rotation-y={Math.PI} fontSize={2.8} color="#f5f0e4">
-        {namedFlight(inputs)}
+      <Text position={[result.offlineYd * impactLateralScale, 10, Math.min(85, result.carryYd * 0.55)]} rotation-y={sceneTextRotationY} fontSize={2.8} color="#f5f0e4">
+        {flightLabel}
       </Text>
       {impactView === 'top' ? null : <OrbitControls makeDefault enablePan={false} target={cameraView.target} maxPolarAngle={cameraView.maxPolar} />}
     </>
@@ -410,6 +422,7 @@ function ImpactPanel() {
   const result = useMemo(() => simulateImpact(inputs), [inputs]);
   const manifest = modules.find((module) => module.id === 'impact')!;
   const spinLoftDeg = inputs.dynamicLoftDeg - inputs.attackAngleDeg;
+  const flightLabel = activeFlightPreset(inputs)?.label ?? namedFlight(inputs);
   const setClub = (club: ClubName) => {
     const defaults = clubDefaults[club];
     setImpactInput('club', club);
@@ -434,11 +447,7 @@ function ImpactPanel() {
     setImpactInput('attackAngleDeg', Number(defaults.attackAngleDeg ?? inputs.attackAngleDeg) + preset.attackOffsetDeg);
   };
   const isPresetActive = (preset: FlightPreset) => {
-    const curve = curveAngles(preset.curve, inputs.handedness);
-    const defaults = clubDefaults[inputs.club];
-    return Math.abs(inputs.faceAngleDeg - curve.faceAngleDeg) < 0.1
-      && Math.abs(inputs.clubPathDeg - curve.clubPathDeg) < 0.1
-      && Math.abs(inputs.dynamicLoftDeg - (Number(defaults.dynamicLoftDeg ?? 0) + preset.loftOffsetDeg)) < 0.1;
+    return activeFlightPreset(inputs)?.label === preset.label;
   };
   const setLaunchAngle = (launchAngleDeg: number) => {
     const dynamicLoftDeg = (launchAngleDeg - inputs.attackAngleDeg * 0.18 - 1.8 - inputs.strikeY * 1.2) / 0.62;
@@ -491,7 +500,7 @@ function ImpactPanel() {
       </div>
       <button type="button" className="primary" onClick={() => captureGhost({
         id: crypto.randomUUID(),
-        label: namedFlight(inputs),
+        label: flightLabel,
         points: result.points.filter((_, index) => index % 20 === 0).map((point) => point.position),
       })}>
         <Target size={18} /> Capture trace
