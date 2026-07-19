@@ -246,7 +246,7 @@ function ImpactScene() {
   const cameraView = useMemo(() => impactCameraConfig(impactView, inputs.targetDistanceYd, result.carryYd, result.apexYd), [impactView, inputs.targetDistanceYd, result.carryYd, result.apexYd]);
   const flightLabel = activeFlightPreset(inputs)?.label ?? namedFlight(inputs);
   const sceneTextRotationY = impactView === 'top' ? 0 : Math.PI;
-  const visualLateralScale = impactView === 'top' ? Math.abs(impactLateralScale) : impactLateralScale;
+  const visualLateralScale = impactLateralScale;
   const sampled = result.points.filter((_, index) => index % 20 === 0).map((point) => point.position);
   const targetZ = inputs.targetDistanceYd * ydToImpactScene;
   const carryZ = result.carryYd * ydToImpactScene;
