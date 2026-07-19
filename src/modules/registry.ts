@@ -33,6 +33,16 @@ export const modules: ModuleManifest[] = [
     changelog: ['v0: one-green rolling sim with live capture ring'],
   },
   {
+    id: 'short',
+    title: 'Short',
+    status: 'live',
+    handles: ['Lie', 'Grass', 'Shot type', 'Loft', 'Bounce', 'Carry', 'Firmness'],
+    readouts: ['Launch', 'Spin', 'Apex', 'Carry', 'Rollout', 'Check'],
+    receipts: ['Lie/contact model', 'Grass spin friction', 'Bounce/loft launch model', 'Surface rollout model'],
+    sources: ['Dave Pelz short-game principles', 'Wedge bounce/fitting conventions', 'TrackMan wedge launch/spin concepts'],
+    changelog: ['v0: deterministic chipping/pitching/sand playground'],
+  },
+  {
     id: 'gained',
     title: 'Gained',
     status: 'stub',

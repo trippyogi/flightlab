@@ -66,12 +66,14 @@ try {
   await capture(desktop, 'desktop-impact-top', (page) => page.getByRole('button', { name: 'Top' }).click());
   await capture(desktop, 'desktop-impact-side', (page) => page.getByRole('button', { name: 'Side' }).click());
   await capture(desktop, 'desktop-green', (page) => page.getByRole('button', { name: 'Green' }).click());
+  await capture(desktop, 'desktop-short', (page) => page.getByRole('button', { name: 'Short' }).click());
   await desktop.close();
 
   const mobile = await makePage({ width: 390, height: 844 });
   await capture(mobile, 'mobile-impact-player');
   await capture(mobile, 'mobile-impact-top', (page) => page.getByRole('button', { name: 'Top' }).click());
   await capture(mobile, 'mobile-green', (page) => page.getByRole('button', { name: 'Green' }).click());
+  await capture(mobile, 'mobile-short', (page) => page.getByRole('button', { name: 'Short' }).click());
   await mobile.close();
 
   await browser.close();

@@ -1,8 +1,9 @@
 import { create } from 'zustand';
 import type { GreenInputs } from '../sim/green';
 import type { ImpactInputs } from '../sim/impact';
+import type { ShortGameInputs } from '../sim/shortGame';
 
-export type ModuleId = 'impact' | 'green' | 'gained';
+export type ModuleId = 'impact' | 'green' | 'short' | 'gained';
 export type ImpactView = 'player' | 'top' | 'side';
 
 export type GhostTrace = {
@@ -16,11 +17,13 @@ type LabState = {
   impactView: ImpactView;
   impactInputs: ImpactInputs;
   greenInputs: GreenInputs;
+  shortInputs: ShortGameInputs;
   ghosts: GhostTrace[];
   setActiveModule: (activeModule: ModuleId) => void;
   setImpactView: (impactView: ImpactView) => void;
   setImpactInput: <K extends keyof ImpactInputs>(key: K, value: ImpactInputs[K]) => void;
   setGreenInput: <K extends keyof GreenInputs>(key: K, value: GreenInputs[K]) => void;
+  setShortInput: <K extends keyof ShortGameInputs>(key: K, value: ShortGameInputs[K]) => void;
   captureGhost: (ghost: GhostTrace) => void;
 };
 
@@ -48,6 +51,16 @@ export const useLabStore = create<LabState>((set) => ({
     aimDeg: 0,
     pacePastFt: 1.4,
   },
+  shortInputs: {
+    lie: 'fairway',
+    grass: 'bent',
+    shot: 'pitch',
+    wedge: 'Sand',
+    carryYd: 28,
+    loftDeg: 56,
+    bounceDeg: 12,
+    greenFirmness: 3,
+  },
   ghosts: [],
   setActiveModule: (activeModule) => set({ activeModule }),
   setImpactView: (impactView) => set({ impactView }),
@@ -55,6 +68,8 @@ export const useLabStore = create<LabState>((set) => ({
     set((state) => ({ impactInputs: { ...state.impactInputs, [key]: value } })),
   setGreenInput: (key, value) =>
     set((state) => ({ greenInputs: { ...state.greenInputs, [key]: value } })),
+  setShortInput: (key, value) =>
+    set((state) => ({ shortInputs: { ...state.shortInputs, [key]: value } })),
   captureGhost: (ghost) =>
     set((state) => ({ ghosts: [ghost, ...state.ghosts].slice(0, 5) })),
 }));

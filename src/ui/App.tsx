@@ -5,6 +5,14 @@ import { useEffect, useMemo, useState } from 'react';
 import { clsx } from 'clsx';
 import { clubDefaults, namedFlight, simulateImpact, type ClubName, type Handedness, type HolePar, type ImpactInputs } from '../sim/impact';
 import { simulateGreen } from '../sim/green';
+import {
+  shortGameWedgeDefaults,
+  simulateShortGame,
+  type GrassType,
+  type LieType,
+  type ShotType,
+  type WedgeType,
+} from '../sim/shortGame';
 import { modules } from '../modules/registry';
 import { useLabStore, type ImpactView } from '../store/labStore';
 
@@ -17,6 +25,7 @@ const ydToImpactScene = 0.15;
 const impactLateralScale = -0.32;
 const fairwayWidthScene = 40 * ydToImpactScene;
 const targetGreenRadiusScene = 10 * ydToImpactScene;
+const ydToShortScene = 0.28;
 const feedbackEndpoint = import.meta.env.VITE_FEEDBACK_ENDPOINT as string | undefined;
 const impactCameraViews: Record<ImpactView, { label: string }> = {
   player: { label: 'Player' },
@@ -87,7 +96,7 @@ function ModuleRail() {
           onClick={() => setActiveModule(module.id)}
           title={module.title}
         >
-          {module.id === 'impact' ? <Gauge size={20} /> : module.id === 'green' ? <CircleDot size={20} /> : <Activity size={20} />}
+          {module.id === 'impact' ? <Gauge size={20} /> : module.id === 'green' ? <CircleDot size={20} /> : module.id === 'short' ? <Target size={20} /> : <Activity size={20} />}
           <span>{module.title}</span>
         </button>
       ))}
@@ -666,6 +675,142 @@ function GreenPanel() {
   );
 }
 
+function ShortScene() {
+  const inputs = useLabStore((state) => state.shortInputs);
+  const result = useMemo(() => simulateShortGame(inputs), [inputs]);
+  const lieColor: Record<LieType, string> = {
+    fairway: '#768e67',
+    tight: '#a6ad83',
+    rough: '#405f34',
+    bunker: '#d8c384',
+  };
+  const flightPoints = useMemo(() => result.points.filter((_, index) => index % 2 === 0), [result.points]);
+  const landingZ = result.carryYd * ydToShortScene;
+  const totalZ = result.totalYd * ydToShortScene;
+  const targetZ = inputs.carryYd * ydToShortScene;
+  const greenCenterZ = Math.max(targetZ + 2.8, totalZ - 1.8);
+  return (
+    <>
+      <ambientLight intensity={0.88} />
+      <directionalLight position={[-3, 7, 4]} intensity={1.45} />
+      <mesh rotation-x={-Math.PI / 2} position={[0, -0.05, 8]}>
+        <planeGeometry args={[24, 34]} />
+        <meshStandardMaterial color="#4f6649" roughness={0.94} />
+      </mesh>
+      <mesh rotation-x={-Math.PI / 2} position={[0, -0.02, greenCenterZ]}>
+        <circleGeometry args={[4.7, 72]} />
+        <meshStandardMaterial color="#89a579" roughness={0.84} />
+      </mesh>
+      <mesh rotation-x={-Math.PI / 2} position={[0, 0.01, -0.2]}>
+        <circleGeometry args={[2.1, 48]} />
+        <meshStandardMaterial color={lieColor[inputs.lie]} roughness={0.96} />
+      </mesh>
+      {inputs.lie === 'bunker' ? (
+        <mesh rotation-x={-Math.PI / 2} position={[0, 0.03, -0.2]}>
+          <ringGeometry args={[1.35, 2.1, 64]} />
+          <meshBasicMaterial color="#f1e3b0" transparent opacity={0.65} />
+        </mesh>
+      ) : null}
+      <mesh rotation-x={-Math.PI / 2} position={[-3.15, 0.015, greenCenterZ - 0.9]}>
+        <circleGeometry args={[1.05, 42]} />
+        <meshBasicMaterial color="#d7c58a" transparent opacity={0.88} />
+      </mesh>
+      <mesh rotation-x={-Math.PI / 2} position={[2.9, 0.015, greenCenterZ + 1.15]}>
+        <circleGeometry args={[0.95, 42]} />
+        <meshBasicMaterial color="#d7c58a" transparent opacity={0.82} />
+      </mesh>
+      <gridHelper args={[28, 14, '#f5f0e4', '#9aaa91']} position={[0, 0.02, 7]} />
+      <mesh position={[0, 0.22, 0]}>
+        <sphereGeometry args={[0.22, 24, 12]} />
+        <meshStandardMaterial color="#f8f2e4" roughness={0.42} />
+      </mesh>
+      <Trajectory points={flightPoints} color="#e86f23" opacity={0.98} scale={ydToShortScene} width={5.2} />
+      <Trajectory points={result.rollPoints} color="#f8efd9" opacity={0.82} scale={ydToShortScene} width={4.2} dashed />
+      <mesh rotation-x={-Math.PI / 2} position={[0, 0.1, landingZ]}>
+        <ringGeometry args={[0.36, 0.52, 48]} />
+        <meshBasicMaterial color="#e86f23" transparent opacity={0.9} />
+      </mesh>
+      <mesh rotation-x={-Math.PI / 2} position={[0, 0.08, totalZ]}>
+        <ringGeometry args={[0.42, 0.58, 48]} />
+        <meshBasicMaterial color="#f8efd9" transparent opacity={0.72} />
+      </mesh>
+      <Text position={[0, 1.05, landingZ]} rotation-y={Math.PI} fontSize={0.7} color="#f8efd9">
+        lands {nf.format(result.carryYd)} yd
+      </Text>
+      <Text position={[0, 1.1, totalZ + 0.6]} rotation-y={Math.PI} fontSize={0.7} color="#f8efd9">
+        {result.check}
+      </Text>
+      <OrbitControls makeDefault enablePan={false} target={[0, 1.8, Math.max(6, totalZ * 0.52)]} maxPolarAngle={Math.PI / 2.08} />
+    </>
+  );
+}
+
+function OptionGroup<T extends string>({
+  label,
+  value,
+  options,
+  onChange,
+  className,
+}: {
+  label: string;
+  value: T;
+  options: readonly T[];
+  onChange: (value: T) => void;
+  className?: string;
+}) {
+  return (
+    <section className="option-group" aria-label={label}>
+      <span>{label}</span>
+      <div className={clsx('segmented', className)}>
+        {options.map((option) => (
+          <button key={option} type="button" className={clsx(value === option && 'active')} aria-pressed={value === option} onClick={() => onChange(option)}>
+            {option}
+          </button>
+        ))}
+      </div>
+    </section>
+  );
+}
+
+function ShortPanel() {
+  const inputs = useLabStore((state) => state.shortInputs);
+  const setShortInput = useLabStore((state) => state.setShortInput);
+  const result = useMemo(() => simulateShortGame(inputs), [inputs]);
+  const manifest = modules.find((module) => module.id === 'short')!;
+  const setWedge = (wedge: WedgeType) => {
+    const defaults = shortGameWedgeDefaults[wedge];
+    setShortInput('wedge', wedge);
+    setShortInput('loftDeg', defaults.loftDeg);
+    setShortInput('bounceDeg', defaults.bounceDeg);
+  };
+  return (
+    <aside className="panel">
+      <OptionGroup<LieType> label="Lie" value={inputs.lie} options={['fairway', 'tight', 'rough', 'bunker']} onChange={(value) => setShortInput('lie', value)} className="four-up" />
+      <OptionGroup<GrassType> label="Grass" value={inputs.grass} options={['bent', 'bermuda', 'fescue', 'sand']} onChange={(value) => setShortInput('grass', value)} className="four-up" />
+      <OptionGroup<WedgeType> label="Wedge" value={inputs.wedge} options={['Gap', 'Sand', 'Lob']} onChange={setWedge} />
+      <OptionGroup<ShotType> label="Shot" value={inputs.shot} options={['chip', 'pitch', 'flop', 'blast', 'bump']} onChange={(value) => setShortInput('shot', value)} className="five-up" />
+      <Slider label="Carry target" value={inputs.carryYd} min={5} max={80} step={1} unit=" yd" onChange={(v) => setShortInput('carryYd', v)} />
+      <Slider label="Loft" value={inputs.loftDeg} min={46} max={64} step={1} unit=" deg" onChange={(v) => setShortInput('loftDeg', v)} />
+      <Slider label="Bounce" value={inputs.bounceDeg} min={4} max={16} step={1} unit=" deg" onChange={(v) => setShortInput('bounceDeg', v)} />
+      <Slider label="Firmness" value={inputs.greenFirmness} min={1} max={5} step={1} onChange={(v) => setShortInput('greenFirmness', v)} />
+      <section className="short-lesson-card" aria-label="short game relationship">
+        <strong>{inputs.lie === 'bunker' ? 'Use the sole' : inputs.lie === 'tight' ? 'Respect the leading edge' : inputs.lie === 'rough' ? 'Expect less friction' : 'Clean contact window'}</strong>
+        <p>Bounce, lie and grass set contact quality first; loft and shot type shape launch; spin plus firmness decide whether the ball checks or releases.</p>
+      </section>
+      <div className="readouts" aria-live="polite">
+        <Readout label="Launch" value={`${nf.format(result.launchDeg)} deg`} receipt={result.receipts.launch} />
+        <Readout label="Spin" value={`${result.spinRpm} rpm`} receipt={result.receipts.spin} />
+        <Readout label="Apex" value={`${nf.format(result.apexFt)} ft`} />
+        <Readout label="Carry" value={`${nf.format(result.carryYd)} yd`} />
+        <Readout label="Rollout" value={`${nf.format(result.rolloutYd)} yd`} receipt={result.receipts.rollout} />
+        <Readout label="Total" value={`${nf.format(result.totalYd)} yd`} />
+        <Readout label="Contact" value={`${Math.round(result.contactQuality * 100)}%`} receipt="Contact quality is a simple first-pass lie/bounce model: high bounce helps sand and rough, but too much bounce can make tight lies harder." />
+      </div>
+      <ManifestNotes manifest={manifest} />
+    </aside>
+  );
+}
+
 function ManifestNotes({ manifest }: { manifest: NonNullable<(typeof modules)[number]> }) {
   return (
     <section className="manifest-notes" aria-label={`${manifest.title} manifest notes`}>
@@ -692,6 +837,7 @@ function FeedbackDock() {
   const activeModule = useLabStore((state) => state.activeModule);
   const impactInputs = useLabStore((state) => state.impactInputs);
   const greenInputs = useLabStore((state) => state.greenInputs);
+  const shortInputs = useLabStore((state) => state.shortInputs);
   const [open, setOpen] = useState(false);
   const [kind, setKind] = useState<'bug' | 'idea' | 'confusing'>('bug');
   const [score, setScore] = useState(3);
@@ -716,7 +862,7 @@ function FeedbackDock() {
         url: window.location.href,
         viewport: { width: window.innerWidth, height: window.innerHeight },
         userAgent: navigator.userAgent,
-        inputs: activeModule === 'impact' ? impactInputs : activeModule === 'green' ? greenInputs : null,
+        inputs: activeModule === 'impact' ? impactInputs : activeModule === 'green' ? greenInputs : activeModule === 'short' ? shortInputs : null,
       },
     };
     const existing = JSON.parse(localStorage.getItem('flightlab.feedback') ?? '[]') as unknown[];
@@ -780,6 +926,8 @@ export function App() {
   const activeManifest = modules.find((module) => module.id === activeModule);
   const camera = activeModule === 'green'
     ? { position: [0, 13, -15] as [number, number, number], fov: 48 }
+    : activeModule === 'short'
+      ? { position: [0, 9.5, -14] as [number, number, number], fov: 52 }
     : { position: [0, 3.2, -24] as [number, number, number], fov: impactCameraFov[impactView] };
   return (
     <main className="app">
@@ -787,7 +935,7 @@ export function App() {
       <section className="stage">
         <div className="scene">
           <Canvas key={`${activeModule}-${impactView}`} camera={camera} dpr={[1, 1.75]}>
-            {activeModule === 'impact' ? <ImpactScene /> : activeModule === 'green' ? <GreenScene /> : null}
+            {activeModule === 'impact' ? <ImpactScene /> : activeModule === 'green' ? <GreenScene /> : activeModule === 'short' ? <ShortScene /> : null}
           </Canvas>
         </div>
         <ViewSwitcher />
@@ -796,7 +944,7 @@ export function App() {
           <strong>{activeManifest?.title}</strong>
         </header>
       </section>
-      {activeModule === 'impact' ? <ImpactPanel /> : activeModule === 'green' ? <GreenPanel /> : <PlaceholderPanel />}
+      {activeModule === 'impact' ? <ImpactPanel /> : activeModule === 'green' ? <GreenPanel /> : activeModule === 'short' ? <ShortPanel /> : <PlaceholderPanel />}
       <FeedbackDock />
     </main>
   );
