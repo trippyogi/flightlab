@@ -5,6 +5,7 @@ describe('simulateImpact', () => {
   it('pins a centered driver reference shot', () => {
     const result = simulateImpact({
       club: 'Driver',
+      handedness: 'right',
       clubSpeedMph: 113,
       attackAngleDeg: 2,
       clubPathDeg: 0,
@@ -24,12 +25,13 @@ describe('simulateImpact', () => {
 
   it('turns face-to-path into signed curve axis', () => {
     const fade = simulateImpact({
-      club: '7-iron',
-      clubSpeedMph: 90,
-      attackAngleDeg: -4,
+      club: '6-iron',
+      handedness: 'right',
+      clubSpeedMph: 92,
+      attackAngleDeg: -3.5,
       clubPathDeg: -2,
       faceAngleDeg: 2,
-      dynamicLoftDeg: 31,
+      dynamicLoftDeg: 28,
       strikeX: 0,
       strikeY: 0,
     });
@@ -37,12 +39,13 @@ describe('simulateImpact', () => {
 
     expect(fade.spinAxisDeg).toBeGreaterThan(0);
     expect(draw.spinAxisDeg).toBeLessThan(0);
-    expect(fade.spinRpm).toBeCloseTo(7000, -2);
+    expect(fade.spinRpm).toBeCloseTo(6350, -2);
   });
 
   it('names the teaching-flight families from face and path', () => {
     const base: ImpactInputs = {
       club: 'Driver',
+      handedness: 'right',
       clubSpeedMph: 113,
       attackAngleDeg: 2,
       clubPathDeg: 0,
@@ -55,5 +58,6 @@ describe('simulateImpact', () => {
     expect(namedFlight(base)).toBe('straight');
     expect(namedFlight({ ...base, faceAngleDeg: 4, clubPathDeg: 7 })).toBe('push-draw');
     expect(namedFlight({ ...base, faceAngleDeg: -4, clubPathDeg: -7 })).toBe('pull-fade');
+    expect(namedFlight({ ...base, handedness: 'left', faceAngleDeg: -4, clubPathDeg: -7 })).toBe('push-draw');
   });
 });

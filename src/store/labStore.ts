@@ -25,10 +25,11 @@ export const useLabStore = create<LabState>((set) => ({
   activeModule: 'impact',
   impactInputs: {
     club: 'Driver',
+    handedness: 'right',
     clubSpeedMph: 113,
     attackAngleDeg: 2,
-    clubPathDeg: 0,
-    faceAngleDeg: 0,
+    clubPathDeg: -3.5,
+    faceAngleDeg: 1.5,
     dynamicLoftDeg: 12,
     strikeX: 0,
     strikeY: 0,

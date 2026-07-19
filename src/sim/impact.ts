@@ -1,9 +1,11 @@
 import { add3, clamp, cross3, degToRad, dot3, mag3, norm3, radToDeg, scale3, type Vec3 } from './vector';
 
-export type ClubName = 'Driver' | '7-iron' | 'Wedge';
+export type ClubName = 'Driver' | '6-iron' | 'Wedge';
+export type Handedness = 'right' | 'left';
 
 export type ImpactInputs = {
   club: ClubName;
+  handedness: Handedness;
   clubSpeedMph: number;
   attackAngleDeg: number;
   clubPathDeg: number;
@@ -48,13 +50,13 @@ const spinDecaySeconds = 24;
 
 const clubParams: Record<ClubName, { launchBlend: number; maxSmash: number; spinK: number; defaultLoft: number }> = {
   Driver: { launchBlend: 0.85, maxSmash: 1.5, spinK: 127.5, defaultLoft: 12 },
-  '7-iron': { launchBlend: 0.75, maxSmash: 1.37, spinK: 135.5, defaultLoft: 31 },
+  '6-iron': { launchBlend: 0.75, maxSmash: 1.39, spinK: 132, defaultLoft: 28 },
   Wedge: { launchBlend: 0.72, maxSmash: 1.18, spinK: 135, defaultLoft: 48 },
 };
 
 export const clubDefaults: Record<ClubName, Partial<ImpactInputs>> = {
   Driver: { clubSpeedMph: 113, attackAngleDeg: 2, dynamicLoftDeg: 12 },
-  '7-iron': { clubSpeedMph: 90, attackAngleDeg: -4, dynamicLoftDeg: 31 },
+  '6-iron': { clubSpeedMph: 92, attackAngleDeg: -3.5, dynamicLoftDeg: 28 },
   Wedge: { clubSpeedMph: 76, attackAngleDeg: -6, dynamicLoftDeg: 48 },
 };
 
@@ -152,8 +154,11 @@ export function simulateImpact(rawInputs: ImpactInputs): ImpactResult {
 }
 
 export function namedFlight(input: ImpactInputs): string {
-  const start = input.faceAngleDeg < -1 ? 'pull' : input.faceAngleDeg > 1 ? 'push' : 'straight';
-  const curve = input.faceAngleDeg - input.clubPathDeg < -1 ? 'draw' : input.faceAngleDeg - input.clubPathDeg > 1 ? 'fade' : 'straight';
+  const side = input.handedness === 'left' ? -1 : 1;
+  const face = input.faceAngleDeg * side;
+  const faceToPath = (input.faceAngleDeg - input.clubPathDeg) * side;
+  const start = face < -1 ? 'pull' : face > 1 ? 'push' : 'straight';
+  const curve = faceToPath < -1 ? 'draw' : faceToPath > 1 ? 'fade' : 'straight';
   return start === 'straight' && curve === 'straight' ? 'straight' : `${start}-${curve}`;
 }
 
