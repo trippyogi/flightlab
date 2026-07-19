@@ -14,6 +14,7 @@ const ftToScene = 0.3048 * greenScale;
 const compassLabels = ['N', 'NE', 'E', 'SE', 'S', 'SW', 'W', 'NW'];
 const parDefaults: Record<HolePar, number> = { par3: 165, par4: 440, par5: 560 };
 const ydToImpactScene = 0.15;
+const impactLateralScale = 0.32;
 
 function compassLabel(degrees: number) {
   const normalized = ((degrees % 360) + 360) % 360;
@@ -113,9 +114,9 @@ function ImpactScene() {
   const sampled = result.points.filter((_, index) => index % 20 === 0).map((point) => point.position);
   const targetZ = inputs.targetDistanceYd * ydToImpactScene;
   const carryZ = result.carryYd * ydToImpactScene;
-  const landingX = result.offlineYd * ydToImpactScene;
+  const landingX = result.offlineYd * impactLateralScale;
   const dispersionWidthYd = Math.round(Math.max(16, result.carryYd * (inputs.club === 'Driver' ? 0.12 : inputs.club === '6-iron' ? 0.09 : 0.07)));
-  const dispersionHalfX = (dispersionWidthYd / 2) * ydToImpactScene;
+  const dispersionHalfX = (dispersionWidthYd / 2) * impactLateralScale;
   const dispersionDepth = Math.max(9, result.carryYd * 0.045) * ydToImpactScene;
   const trees = useMemo(() => [-1, 1].flatMap((side) => [70, 120, 175, 235, 305, 385, 485].map((z, index) => ({
     x: side * (23 + (index % 3) * 5),
@@ -172,9 +173,9 @@ function ImpactScene() {
         <meshStandardMaterial color="#2a3128" transparent opacity={0.42} roughness={0.82} />
       </mesh>
       {ghosts.map((ghost, index) => (
-        <Trajectory key={ghost.id} points={ghost.points} color="#ece4d3" opacity={0.26 - index * 0.025} width={2.6} />
+        <Trajectory key={ghost.id} points={ghost.points} color="#ece4d3" opacity={0.26 - index * 0.025} scale={ydToImpactScene} lateralScale={impactLateralScale} width={2.6} />
       ))}
-      <Trajectory points={sampled} color="#e86f23" opacity={0.98} width={5.2} />
+      <Trajectory points={sampled} color="#e86f23" opacity={0.98} scale={ydToImpactScene} lateralScale={impactLateralScale} width={5.2} />
       <mesh position={[landingX, 0.12, carryZ]} rotation-x={-Math.PI / 2} scale={[dispersionHalfX, dispersionDepth, 1]}>
         <ringGeometry args={[0.9, 1, 72]} />
         <meshBasicMaterial color="#f8efd9" transparent opacity={0.78} />
@@ -191,7 +192,7 @@ function ImpactScene() {
       <Text position={[0, 1.2, targetZ]} rotation-y={Math.PI} fontSize={1.55} color="#f8efd9">
         {inputs.holePar.replace('par', 'Par ')} · {inputs.targetDistanceYd} yd
       </Text>
-      <Text position={[result.offlineYd * 0.15, 10, Math.min(85, result.carryYd * 0.55)]} rotation-y={Math.PI} fontSize={2.8} color="#f5f0e4">
+      <Text position={[result.offlineYd * impactLateralScale, 10, Math.min(85, result.carryYd * 0.55)]} rotation-y={Math.PI} fontSize={2.8} color="#f5f0e4">
         {namedFlight(inputs)}
       </Text>
       <OrbitControls makeDefault enablePan={false} target={[0, 4.5, 54]} maxPolarAngle={Math.PI / 2.1} />
@@ -199,8 +200,8 @@ function ImpactScene() {
   );
 }
 
-function Trajectory({ points, color, opacity, scale = 0.15, width = 4 }: { points: readonly (readonly [number, number, number])[]; color: string; opacity: number; scale?: number; width?: number }) {
-  const scaled = useMemo(() => points.map((point) => [point[0] * scale, point[1] * scale, point[2] * scale] as [number, number, number]), [points, scale]);
+function Trajectory({ points, color, opacity, scale = 0.15, lateralScale = scale, width = 4 }: { points: readonly (readonly [number, number, number])[]; color: string; opacity: number; scale?: number; lateralScale?: number; width?: number }) {
+  const scaled = useMemo(() => points.map((point) => [point[0] * lateralScale, point[1] * scale, point[2] * scale] as [number, number, number]), [points, scale, lateralScale]);
   return (
     <Line points={scaled} color={color} lineWidth={width} transparent opacity={opacity} />
   );
