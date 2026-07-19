@@ -152,7 +152,7 @@ function Readout({ label, value, receipt }: { label: string; value: string; rece
   );
 }
 
-function impactCameraConfig(view: ImpactView, targetDistanceYd: number, carryYd: number) {
+function impactCameraConfig(view: ImpactView, targetDistanceYd: number, carryYd: number, apexYd = 0) {
   const shotDepth = Math.max(targetDistanceYd, carryYd + 35) * ydToImpactScene;
   const midZ = shotDepth * 0.5;
   if (view === 'top') {
@@ -164,9 +164,13 @@ function impactCameraConfig(view: ImpactView, targetDistanceYd: number, carryYd:
     };
   }
   if (view === 'side') {
+    const carryDepth = Math.max(24, (carryYd + 24) * ydToImpactScene);
+    const carryMidZ = Math.max(12, carryYd * ydToImpactScene * 0.5);
+    const apexScene = apexYd * ydToImpactScene;
+    const targetY = Math.max(4.5, apexScene * 0.48);
     return {
-      position: [-Math.max(58, shotDepth * 0.92), 18, midZ] as [number, number, number],
-      target: [0, 7, midZ] as [number, number, number],
+      position: [-Math.max(66, carryDepth * 1.22, apexScene * 5), targetY + Math.max(5, apexScene * 0.18), carryMidZ] as [number, number, number],
+      target: [0, targetY, carryMidZ] as [number, number, number],
       up: [0, 1, 0] as [number, number, number],
       maxPolar: Math.PI / 2.02,
     };
@@ -179,9 +183,9 @@ function impactCameraConfig(view: ImpactView, targetDistanceYd: number, carryYd:
   };
 }
 
-function ImpactCameraRig({ view, targetDistanceYd, carryYd }: { view: ImpactView; targetDistanceYd: number; carryYd: number }) {
+function ImpactCameraRig({ view, targetDistanceYd, carryYd, apexYd }: { view: ImpactView; targetDistanceYd: number; carryYd: number; apexYd: number }) {
   const { camera } = useThree();
-  const config = useMemo(() => impactCameraConfig(view, targetDistanceYd, carryYd), [view, targetDistanceYd, carryYd]);
+  const config = useMemo(() => impactCameraConfig(view, targetDistanceYd, carryYd, apexYd), [view, targetDistanceYd, carryYd, apexYd]);
   useEffect(() => {
     camera.position.set(...config.position);
     camera.up.set(...config.up);
@@ -228,7 +232,7 @@ function ImpactScene() {
   const impactView = useLabStore((state) => state.impactView);
   const ghosts = useLabStore((state) => state.ghosts);
   const result = useMemo(() => simulateImpact(inputs), [inputs]);
-  const cameraView = useMemo(() => impactCameraConfig(impactView, inputs.targetDistanceYd, result.carryYd), [impactView, inputs.targetDistanceYd, result.carryYd]);
+  const cameraView = useMemo(() => impactCameraConfig(impactView, inputs.targetDistanceYd, result.carryYd, result.apexYd), [impactView, inputs.targetDistanceYd, result.carryYd, result.apexYd]);
   const flightLabel = activeFlightPreset(inputs)?.label ?? namedFlight(inputs);
   const sceneTextRotationY = impactView === 'top' ? 0 : Math.PI;
   const sampled = result.points.filter((_, index) => index % 20 === 0).map((point) => point.position);
@@ -245,7 +249,7 @@ function ImpactScene() {
   }))), []);
   return (
     <>
-      <ImpactCameraRig view={impactView} targetDistanceYd={inputs.targetDistanceYd} carryYd={result.carryYd} />
+      <ImpactCameraRig view={impactView} targetDistanceYd={inputs.targetDistanceYd} carryYd={result.carryYd} apexYd={result.apexYd} />
       <ambientLight intensity={0.8} />
       <directionalLight position={[4, 8, 5]} intensity={1.6} />
       <mesh rotation-x={-Math.PI / 2} position={[0, -0.04, 52]}>
