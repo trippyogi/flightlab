@@ -201,6 +201,12 @@ input {
   background: var(--chalk);
 }
 
+.segmented button.active:hover {
+  border-color: #b95418;
+  background: var(--amber);
+  color: #17120b;
+}
+
 .control {
   display: grid;
   gap: 8px;
@@ -246,6 +252,11 @@ input[type="range"] {
   border-color: #e69b3f;
   background: #ffe1bd;
   box-shadow: 0 0 0 1px rgba(242, 111, 33, 0.18) inset;
+}
+
+.quick-grid button.active:hover {
+  border-color: #e69b3f;
+  background: #ffe1bd;
 }
 
 .flight-icon {
@@ -537,6 +548,12 @@ input[type="range"] {
 
 .feedback-row button.active,
 .feedback-actions button {
+  border-color: #b95418;
+  background: var(--amber);
+  color: #17120b;
+}
+
+.feedback-row button.active:hover {
   border-color: #b95418;
   background: var(--amber);
   color: #17120b;

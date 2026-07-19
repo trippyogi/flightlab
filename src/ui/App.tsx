@@ -346,19 +346,19 @@ function ImpactPanel() {
     <aside className="panel">
       <div className="segmented">
         {(['Driver', '6-iron', 'Wedge'] as ClubName[]).map((club) => (
-          <button key={club} type="button" className={clsx(inputs.club === club && 'active')} onClick={() => setClub(club)}>{club}</button>
+          <button key={club} type="button" className={clsx(inputs.club === club && 'active')} aria-pressed={inputs.club === club} onClick={() => setClub(club)}>{club}</button>
         ))}
       </div>
       <div className="segmented handedness-toggle" aria-label="player handedness">
         {(['right', 'left'] as Handedness[]).map((handedness) => (
-          <button key={handedness} type="button" className={clsx(inputs.handedness === handedness && 'active')} onClick={() => setHandedness(handedness)}>
+          <button key={handedness} type="button" className={clsx(inputs.handedness === handedness && 'active')} aria-pressed={inputs.handedness === handedness} onClick={() => setHandedness(handedness)}>
             {handedness === 'right' ? 'Right hand' : 'Left hand'}
           </button>
         ))}
       </div>
       <div className="segmented par-toggle" aria-label="hole par">
         {(['par3', 'par4', 'par5'] as HolePar[]).map((holePar) => (
-          <button key={holePar} type="button" className={clsx(inputs.holePar === holePar && 'active')} onClick={() => setPar(holePar)}>
+          <button key={holePar} type="button" className={clsx(inputs.holePar === holePar && 'active')} aria-pressed={inputs.holePar === holePar} onClick={() => setPar(holePar)}>
             {holePar.replace('par', 'Par ')}
           </button>
         ))}
@@ -371,17 +371,21 @@ function ImpactPanel() {
       <Slider label="Launch" value={result.launchAngleDeg} min={4} max={38} step={0.5} unit=" deg" onChange={setLaunchAngle} />
       <Slider label="Toe / heel" value={inputs.strikeX} min={-2} max={2} step={0.1} onChange={(v) => setImpactInput('strikeX', v)} />
       <div className="quick-grid">
-        {flightPresets.map((preset) => (
-          <button
-            key={preset.label}
-            type="button"
-            className={clsx(isPresetActive(preset) && 'active')}
-            onClick={() => setTigerPreset(preset)}
-          >
-            <FlightPathIcon height={preset.height} curve={preset.curve} />
-            <span>{preset.label}</span>
-          </button>
-        ))}
+        {flightPresets.map((preset) => {
+          const active = isPresetActive(preset);
+          return (
+            <button
+              key={preset.label}
+              type="button"
+              className={clsx(active && 'active')}
+              aria-pressed={active}
+              onClick={() => setTigerPreset(preset)}
+            >
+              <FlightPathIcon height={preset.height} curve={preset.curve} />
+              <span>{preset.label}</span>
+            </button>
+          );
+        })}
       </div>
       <button type="button" className="primary" onClick={() => captureGhost({
         id: crypto.randomUUID(),
@@ -594,7 +598,7 @@ function FeedbackDock() {
         <section className="feedback-panel" aria-label="flightlab feedback">
           <div className="feedback-row">
             {(['bug', 'confusing', 'idea'] as const).map((option) => (
-              <button key={option} type="button" className={clsx(kind === option && 'active')} onClick={() => setKind(option)}>
+              <button key={option} type="button" className={clsx(kind === option && 'active')} aria-pressed={kind === option} onClick={() => setKind(option)}>
                 {option}
               </button>
             ))}
