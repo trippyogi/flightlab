@@ -115,7 +115,7 @@ export function simulateImpact(rawInputs: ImpactInputs): ImpactResult {
   const launch = vectorFromAzimuthElevation(launchDir, launchAngle);
   let position: Vec3 = [0, 0.02, 0];
   let velocity = scale3(launch, ballSpeedMph * mphToMs);
-  const spinVector = vectorFromAzimuthElevation(spinAxisDeg - 90, 0);
+  const spinVector = vectorFromAzimuthElevation(-90 - spinAxisDeg, 0);
   const points: TrajectoryPoint[] = [{ t: 0, position, velocity }];
   let carry: Vec3 = position;
   const dt = 1 / 240;

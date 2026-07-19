@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { degToRad } from './vector';
 import { namedFlight, simulateImpact, type ImpactInputs } from './impact';
 
 describe('simulateImpact', () => {
@@ -64,6 +65,33 @@ describe('simulateImpact', () => {
     expect(pushDraw.startLineDeg).toBeGreaterThan(0);
     expect(pushDraw.faceToPathDeg).toBeLessThan(0);
     expect(pushDraw.spinAxisDeg).toBeLessThan(0);
+  });
+
+  it('curves negative face-to-path draws left and positive face-to-path fades right', () => {
+    const base: ImpactInputs = {
+      club: 'Driver',
+      handedness: 'right',
+      holePar: 'par4',
+      targetDistanceYd: 440,
+      clubSpeedMph: 113,
+      attackAngleDeg: 2,
+      clubPathDeg: 0,
+      faceAngleDeg: 0,
+      dynamicLoftDeg: 12,
+      strikeX: 0,
+      strikeY: 0,
+    };
+    const draw = simulateImpact({ ...base, faceAngleDeg: 1.5, clubPathDeg: 3.5 });
+    const fade = simulateImpact({ ...base, faceAngleDeg: -1.5, clubPathDeg: -3.5 });
+    const drawStartLineYd = Math.tan(degToRad(draw.startLineDeg)) * draw.carryYd;
+    const fadeStartLineYd = Math.tan(degToRad(fade.startLineDeg)) * fade.carryYd;
+
+    expect(draw.faceToPathDeg).toBeLessThan(0);
+    expect(draw.startLineDeg).toBeGreaterThan(0);
+    expect(draw.offlineYd).toBeLessThan(drawStartLineYd);
+    expect(fade.faceToPathDeg).toBeGreaterThan(0);
+    expect(fade.startLineDeg).toBeLessThan(0);
+    expect(fade.offlineYd).toBeGreaterThan(fadeStartLineYd);
   });
 
   it('names the teaching-flight families from face and path', () => {
