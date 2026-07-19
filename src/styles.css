@@ -223,6 +223,14 @@ input {
   grid-template-columns: repeat(5, 1fr);
 }
 
+.segmented.short-lies {
+  grid-template-columns: repeat(2, 1fr);
+}
+
+.segmented.short-grass {
+  grid-template-columns: repeat(2, 1fr);
+}
+
 .segmented button,
 .quick-grid button,
 .primary,
@@ -440,11 +448,110 @@ input[type="range"] {
   color: var(--ink);
 }
 
-.short-lesson-card p {
+.short-lesson-card p,
+.short-outcome-card p {
   margin: 0;
   font-size: 12px;
   line-height: 1.42;
   color: #4f5c4c;
+}
+
+.short-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.short-chips span {
+  padding: 4px 7px;
+  border: 1px solid rgba(36, 65, 54, 0.18);
+  border-radius: 999px;
+  font-family: "IBM Plex Mono", ui-monospace, monospace;
+  font-size: 10px;
+  color: #21382f;
+  background: rgba(248, 239, 217, 0.72);
+}
+
+.risk-line {
+  color: #813b16 !important;
+}
+
+.short-outcome-card,
+.short-matrix-card {
+  display: grid;
+  gap: 8px;
+  padding: 12px;
+  border: 1px solid rgba(28, 36, 31, 0.13);
+  border-radius: 8px;
+  background: #f7f1e3;
+}
+
+.short-outcome-card > span,
+.matrix-head span {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  color: #586553;
+}
+
+.outcome-row {
+  display: grid;
+  grid-template-columns: 58px auto;
+  gap: 2px 8px;
+  align-items: baseline;
+  padding: 7px 0;
+  border-top: 1px solid rgba(20, 24, 18, 0.1);
+}
+
+.outcome-row strong {
+  text-transform: capitalize;
+}
+
+.outcome-row b {
+  justify-self: end;
+  font-family: "IBM Plex Mono", ui-monospace, monospace;
+  font-size: 12px;
+}
+
+.outcome-row p {
+  grid-column: 1 / -1;
+}
+
+.matrix-head,
+.matrix-labels,
+.matrix-row {
+  display: grid;
+  grid-template-columns: 1fr repeat(3, 52px);
+  gap: 6px;
+  align-items: center;
+}
+
+.matrix-head b,
+.matrix-labels span,
+.matrix-row span,
+.matrix-row strong {
+  font-family: "IBM Plex Mono", ui-monospace, monospace;
+  font-size: 11px;
+}
+
+.matrix-head b {
+  grid-column: 2 / -1;
+  justify-self: end;
+  color: #586553;
+}
+
+.matrix-labels span,
+.matrix-row span {
+  text-align: right;
+}
+
+.matrix-labels {
+  color: #687563;
+}
+
+.matrix-row {
+  padding-top: 5px;
+  border-top: 1px solid rgba(20, 24, 18, 0.1);
 }
 
 .leave-card span {
