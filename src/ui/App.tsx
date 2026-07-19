@@ -14,7 +14,7 @@ const ftToScene = 0.3048 * greenScale;
 const compassLabels = ['N', 'NE', 'E', 'SE', 'S', 'SW', 'W', 'NW'];
 const parDefaults: Record<HolePar, number> = { par3: 165, par4: 440, par5: 560 };
 const ydToImpactScene = 0.15;
-const impactLateralScale = 0.32;
+const impactLateralScale = -0.32;
 const feedbackEndpoint = import.meta.env.VITE_FEEDBACK_ENDPOINT as string | undefined;
 
 function compassLabel(degrees: number) {
@@ -123,7 +123,7 @@ function ImpactScene() {
   const carryZ = result.carryYd * ydToImpactScene;
   const landingX = result.offlineYd * impactLateralScale;
   const dispersionWidthYd = Math.round(Math.max(16, result.carryYd * (inputs.club === 'Driver' ? 0.12 : inputs.club === '6-iron' ? 0.09 : 0.07)));
-  const dispersionHalfX = (dispersionWidthYd / 2) * impactLateralScale;
+  const dispersionHalfX = (dispersionWidthYd / 2) * Math.abs(impactLateralScale);
   const dispersionDepth = Math.max(9, result.carryYd * 0.045) * ydToImpactScene;
   const trees = useMemo(() => [-1, 1].flatMap((side) => [70, 120, 175, 235, 305, 385, 485].map((z, index) => ({
     x: side * (23 + (index % 3) * 5),
