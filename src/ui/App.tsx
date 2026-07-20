@@ -111,7 +111,7 @@ const lieVisuals: Record<LieType, { grass: 'low' | 'medium' | 'high'; ball: 'cle
   'plugged-bunker': { grass: 'medium', ball: 'buried', title: 'Plugged bunker', note: 'Steeper entry and less release control; buried leading edge risk rises.' },
 };
 const impactCameraViews: Record<ImpactView, { label: string }> = {
-  player: { label: 'Player' },
+  player: { label: 'Tee' },
   top: { label: 'Top' },
   side: { label: 'Side' },
 };
