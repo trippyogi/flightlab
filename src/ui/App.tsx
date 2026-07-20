@@ -328,19 +328,31 @@ function ImpactScene() {
     z: z * ydToImpactScene,
     h: 3.8 + (index % 4) * 0.55,
   }))), []);
+  const fairwayStripes = useMemo(() => Array.from({ length: Math.max(5, Math.ceil(fairwayLength / 5.8)) }, (_, index) => ({
+    z: 2.9 + index * 5.8,
+    color: index % 2 === 0 ? '#6f9363' : '#5f8257',
+  })), [fairwayLength]);
   return (
     <>
+      <color attach="background" args={['#c7d7c0']} />
+      <fog attach="fog" args={['#c7d7c0', 54, 132]} />
       <ImpactCameraRig view={impactView} targetDistanceYd={inputs.targetDistanceYd} carryYd={result.carryYd} apexYd={result.apexYd} />
       <ambientLight intensity={0.8} />
       <directionalLight position={[4, 8, 5]} intensity={1.6} />
       <mesh rotation-x={-Math.PI / 2} position={[0, -0.04, roughLength * 0.5 - 8]}>
         <planeGeometry args={[96, roughLength]} />
-        <meshStandardMaterial color="#4f6649" roughness={0.94} />
+        <meshStandardMaterial color="#3f633d" roughness={0.94} />
       </mesh>
       <mesh rotation-x={-Math.PI / 2} position={[0, -0.02, fairwayLength * 0.5]}>
         <planeGeometry args={[fairwayWidthScene, fairwayLength]} />
-        <meshStandardMaterial color="#6f8468" roughness={0.92} metalness={0.02} />
+        <meshStandardMaterial color="#668a5c" roughness={0.92} metalness={0.02} />
       </mesh>
+      {fairwayStripes.map((stripe) => (
+        <mesh key={stripe.z} rotation-x={-Math.PI / 2} position={[0, 0.002, stripe.z]}>
+          <planeGeometry args={[fairwayWidthScene * 0.98, 2.7]} />
+          <meshBasicMaterial color={stripe.color} transparent opacity={0.42} />
+        </mesh>
+      ))}
       <mesh rotation-x={-Math.PI / 2} position={[0, 0.015, -1]}>
         <circleGeometry args={[1.2, 48]} />
         <meshBasicMaterial color="#f8efd9" transparent opacity={0.18} />
@@ -375,7 +387,7 @@ function ImpactScene() {
           </mesh>
         </group>
       ))}
-      <gridHelper args={[Math.max(72, targetZ + 20), 18, '#f5f0e4', '#9aaa91']} position={[0, 0.01, targetZ * 0.5]} />
+      <gridHelper args={[Math.max(72, targetZ + 20), 18, '#e3eed6', '#66845b']} position={[0, 0.01, targetZ * 0.5]} />
       <mesh position={[0, 0.25, 0]}>
         <sphereGeometry args={[0.32, 32, 16]} />
         <meshStandardMaterial color="#f7f1e3" roughness={0.46} />
@@ -644,14 +656,24 @@ function GreenScene() {
   const startZ = -inputs.distanceFt * ftToScene;
   return (
     <>
+      <color attach="background" args={['#c8d8bd']} />
+      <fog attach="fog" args={['#c8d8bd', 22, 58]} />
       <GreenCameraRig points={cameraPoints} />
       <ambientLight intensity={0.9} />
       <directionalLight position={[-3, 6, 4]} intensity={1.4} />
       <mesh rotation-x={-Math.PI / 2}>
         <planeGeometry args={[32, 32, 32, 32]} />
-        <meshStandardMaterial color="#748d69" roughness={0.9} />
+        <meshStandardMaterial color="#57794f" roughness={0.9} />
       </mesh>
-      <gridHelper args={[28, 14, '#f5f0e4', '#9bae93']} position={[0, 0.04, 0]} />
+      <mesh rotation-x={-Math.PI / 2} position={[0, 0.015, -1.2]} scale={[1.18, 0.92, 1]}>
+        <circleGeometry args={[14, 112]} />
+        <meshBasicMaterial color="#7fac70" transparent opacity={0.46} />
+      </mesh>
+      <mesh rotation-x={-Math.PI / 2} position={[0, 0.035, -1.2]} scale={[1.18, 0.92, 1]}>
+        <ringGeometry args={[11.6, 11.76, 112]} />
+        <meshBasicMaterial color="#f1e7bd" transparent opacity={0.42} />
+      </mesh>
+      <gridHelper args={[28, 14, '#e1efd6', '#6d8d62']} position={[0, 0.04, 0]} />
       <GreenReadingMap distanceFt={inputs.distanceFt} slopePercent={inputs.slopePercent} slopeDirectionDeg={inputs.slopeDirectionDeg} aimDeg={inputs.aimDeg} />
       <mesh position={[0, 0.07, 0]} rotation-x={-Math.PI / 2}>
         <ringGeometry args={[result.captureRadiusM * greenScale, 0.29, 48]} />
@@ -764,12 +786,20 @@ function ShortScene() {
   const groundLength = Math.max(24, totalZ + 11);
   return (
     <>
+      <color attach="background" args={['#c6d8bd']} />
+      <fog attach="fog" args={['#c6d8bd', 18, 48]} />
       <ambientLight intensity={0.88} />
       <directionalLight position={[-3, 7, 4]} intensity={1.45} />
       <mesh rotation-x={-Math.PI / 2} position={[0, -0.05, groundLength * 0.5 - 4]}>
         <planeGeometry args={[20, groundLength]} />
-        <meshStandardMaterial color="#4f6649" roughness={0.94} />
+        <meshStandardMaterial color="#365e37" roughness={0.94} />
       </mesh>
+      {Array.from({ length: 8 }, (_, index) => (
+        <mesh key={index} rotation-x={-Math.PI / 2} position={[0, -0.015, index * 2.6 + 1.5]}>
+          <planeGeometry args={[19, 1.18]} />
+          <meshBasicMaterial color={index % 2 === 0 ? '#456f42' : '#2f5734'} transparent opacity={0.3} />
+        </mesh>
+      ))}
       <group position={[0, 0, greenCenterZ]}>
         <mesh rotation-x={-Math.PI / 2} position={[-0.8, -0.02, -0.15]} scale={[1.28, 0.86, 1]}>
           <circleGeometry args={[4.15, 96]} />
@@ -810,7 +840,7 @@ function ShortScene() {
         <circleGeometry args={[0.64, 42]} />
         <meshBasicMaterial color="#d7c58a" transparent opacity={0.82} />
       </mesh>
-      <gridHelper args={[Math.max(18, groundLength), 12, '#f5f0e4', '#9aaa91']} position={[0, 0.02, groundLength * 0.5 - 4]} />
+      <gridHelper args={[Math.max(18, groundLength), 12, '#dce9d2', '#65835d']} position={[0, 0.02, groundLength * 0.5 - 4]} />
       <mesh position={[0, 0.12, 0]}>
         <sphereGeometry args={[0.11, 24, 12]} />
         <meshStandardMaterial color="#f8f2e4" roughness={0.42} />
@@ -848,12 +878,6 @@ function ShortScene() {
         <ringGeometry args={[0.22, 0.31, 48]} />
         <meshBasicMaterial color="#f8efd9" transparent opacity={0.72} />
       </mesh>
-      <Text position={[0, 0.72, landingZ]} rotation-y={Math.PI} fontSize={0.45} color="#f8efd9">
-        lands {nf.format(result.carryYd)} yd
-      </Text>
-      <Text position={[0, 0.76, totalZ + 0.45]} rotation-y={Math.PI} fontSize={0.45} color="#f8efd9">
-        {result.carryRollRatio} · {result.check}
-      </Text>
       <OrbitControls makeDefault enablePan={false} target={[0, 1.4, Math.max(4.5, totalZ * 0.52)]} maxPolarAngle={Math.PI / 2.08} />
     </>
   );
@@ -1124,6 +1148,55 @@ function FeedbackDock() {
   );
 }
 
+function ResultHud() {
+  const activeModule = useLabStore((state) => state.activeModule);
+  const impactInputs = useLabStore((state) => state.impactInputs);
+  const greenInputs = useLabStore((state) => state.greenInputs);
+  const shortInputs = useLabStore((state) => state.shortInputs);
+  const impact = useMemo(() => simulateImpact(impactInputs), [impactInputs]);
+  const green = useMemo(() => simulateGreen(greenInputs), [greenInputs]);
+  const short = useMemo(() => simulateShortGame(shortInputs), [shortInputs]);
+
+  if (activeModule === 'impact') {
+    const flightLabel = activeFlightPreset(impactInputs)?.label ?? namedFlight(impactInputs);
+    return (
+      <section className="result-hud" aria-label="impact result summary">
+        <span>Shot</span>
+        <strong>{flightLabel}</strong>
+        <div><b>{Math.round(impact.carryYd)}</b><small>carry yd</small></div>
+        <div><b>{nf.format(impact.offlineYd)}</b><small>offline yd</small></div>
+        <div><b>{Math.round(impact.spinRpm)}</b><small>spin rpm</small></div>
+      </section>
+    );
+  }
+
+  if (activeModule === 'green') {
+    return (
+      <section className="result-hud" aria-label="putting result summary">
+        <span>Putt</span>
+        <strong>{green.made ? 'Captured' : 'Missed'}</strong>
+        <div><b>{nf.format(Math.abs(green.breakFt))}</b><small>break ft</small></div>
+        <div><b>{nf.format(green.stopPastFt)}</b><small>stop ft</small></div>
+        <div><b>{nf.format(green.leave.distanceFt)}</b><small>next ft</small></div>
+      </section>
+    );
+  }
+
+  if (activeModule === 'short') {
+    return (
+      <section className="result-hud" aria-label="short game result summary">
+        <span>{shortCategoryLabels[shortInputs.category]}</span>
+        <strong>{short.check}</strong>
+        <div><b>{Math.round(short.carryYd)}</b><small>carry yd</small></div>
+        <div><b>{nf.format(short.rolloutYd)}</b><small>roll yd</small></div>
+        <div><b>{short.carryRollRatio}</b><small>carry-roll</small></div>
+      </section>
+    );
+  }
+
+  return null;
+}
+
 export function App() {
   const activeModule = useLabStore((state) => state.activeModule);
   const impactView = useLabStore((state) => state.impactView);
@@ -1147,6 +1220,7 @@ export function App() {
           <span>flightlab</span>
           <strong>{activeManifest?.title}</strong>
         </header>
+        <ResultHud />
       </section>
       {activeModule === 'impact' ? <ImpactPanel /> : activeModule === 'green' ? <GreenPanel /> : activeModule === 'short' ? <ShortPanel /> : <PlaceholderPanel />}
       <FeedbackDock />
