@@ -4,6 +4,7 @@ import { simulateShortGame, type ShortGameInputs } from './shortGame';
 const base: ShortGameInputs = {
   lie: 'fairway',
   grass: 'bent',
+  category: 'pitch',
   shot: 'pitch',
   wedge: 'Sand',
   swing: '9:00',
@@ -47,7 +48,26 @@ describe('simulateShortGame', () => {
 
     expect(wetRough.spinRpm).toBeLessThan(fairway.spinRpm);
     expect(wetRough.totalYd - wetRough.carryYd).toBeGreaterThan(fairway.rolloutYd);
-    expect(wetRough.risks).toContain('flyer/release risk');
+    expect(wetRough.risks).toContain('grass-between-face risk');
+  });
+
+  it('models a flier lie as a low-spin release pitch', () => {
+    const fairway = simulateShortGame(base);
+    const flier = simulateShortGame({ ...base, lie: 'flier', grass: 'bermuda' });
+
+    expect(flier.launchDeg).toBeGreaterThan(fairway.launchDeg);
+    expect(flier.spinRpm).toBeLessThan(fairway.spinRpm);
+    expect(flier.rolloutYd).toBeGreaterThan(fairway.rolloutYd);
+    expect(flier.risks).toContain('flier/release risk');
+  });
+
+  it('makes a sitting-down lie less reliable than a sitting-up lie', () => {
+    const sittingUp = simulateShortGame({ ...base, lie: 'sitting-up' });
+    const sittingDown = simulateShortGame({ ...base, lie: 'sitting-down' });
+
+    expect(sittingDown.contactQuality).toBeLessThan(sittingUp.contactQuality);
+    expect(sittingDown.landingWindowYd).toBeGreaterThan(sittingUp.landingWindowYd);
+    expect(sittingDown.risks).toContain('buried contact risk');
   });
 
   it('links face-open and shaft-lean to effective loft and bounce', () => {

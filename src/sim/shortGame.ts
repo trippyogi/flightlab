@@ -1,14 +1,16 @@
 import { clamp, degToRad, type Vec3 } from './vector';
 
-export type LieType = 'fairway' | 'tight' | 'rough' | 'wet-rough' | 'hardpan' | 'bunker' | 'plugged-bunker';
+export type LieType = 'fairway' | 'tight' | 'sitting-up' | 'in-between' | 'sitting-down' | 'flier' | 'rough' | 'wet-rough' | 'hardpan' | 'bunker' | 'plugged-bunker';
 export type GrassType = 'bent' | 'bermuda' | 'fescue' | 'sand' | 'into-grain' | 'down-grain';
 export type ShotType = 'chip' | 'pitch' | 'flop' | 'blast' | 'bump';
+export type ShotCategory = 'chip' | 'pitch' | 'distance-wedge' | 'sand';
 export type WedgeType = 'Gap' | 'Sand' | 'Lob';
 export type SwingClock = '7:30' | '9:00' | '10:30';
 
 export type ShortGameInputs = {
   lie: LieType;
   grass: GrassType;
+  category: ShotCategory;
   shot: ShotType;
   wedge: WedgeType;
   swing: SwingClock;
@@ -54,6 +56,10 @@ export const shortGameWedgeDefaults = wedgeDefaults;
 const lieFactors: Record<LieType, { launch: number; spin: number; contact: number; rollout: number; risk: number }> = {
   fairway: { launch: 0, spin: 1, contact: 1, rollout: 1, risk: 0.08 },
   tight: { launch: -2, spin: 1.08, contact: 0.94, rollout: 0.95, risk: 0.18 },
+  'sitting-up': { launch: 5, spin: 0.72, contact: 0.94, rollout: 1.18, risk: 0.2 },
+  'in-between': { launch: 2, spin: 0.66, contact: 0.88, rollout: 1.26, risk: 0.26 },
+  'sitting-down': { launch: 0, spin: 0.52, contact: 0.78, rollout: 1.42, risk: 0.36 },
+  flier: { launch: 6, spin: 0.36, contact: 0.9, rollout: 1.72, risk: 0.42 },
   rough: { launch: 3, spin: 0.58, contact: 0.86, rollout: 1.28, risk: 0.26 },
   'wet-rough': { launch: 4, spin: 0.42, contact: 0.8, rollout: 1.48, risk: 0.34 },
   hardpan: { launch: -3, spin: 0.94, contact: 0.9, rollout: 1.18, risk: 0.28 },
@@ -103,7 +109,10 @@ function soleInteraction(inputs: ShortGameInputs, effectiveBounceDeg: number, li
 function recommendation(inputs: ShortGameInputs, rolloutYd: number, contactQuality: number, sole: ShortGameResult['soleInteraction']) {
   if (sole === 'skips') return 'Less bounce or less face-open is safer from this firm lie.';
   if (sole === 'digs') return 'Add bounce or shallow the delivery before trusting this shot.';
-  if (inputs.lie === 'rough' || inputs.lie === 'wet-rough') return 'Land it earlier; grass lowers spin and adds release.';
+  if (inputs.lie === 'flier') return 'Treat this like a launch-with-release lie; plan for low spin and a bigger first bounce.';
+  if (inputs.lie === 'sitting-down') return 'Use more loft or a steeper entry; buried grass lowers contact quality and spin.';
+  if (inputs.lie === 'rough' || inputs.lie === 'wet-rough' || inputs.lie === 'sitting-up' || inputs.lie === 'in-between') return 'Land it earlier; grass lowers spin and adds release.';
+  if (inputs.category === 'distance-wedge') return 'Use the clock number first, then tune landing window and release.';
   if (inputs.shot === 'bump' && rolloutYd > inputs.carryYd * 1.2) return 'Good bump-and-run shape if the landing window is open.';
   if (contactQuality > 0.98 && rolloutYd < inputs.carryYd * 0.22) return 'This is a good check-shot candidate.';
   return 'Match landing spot to carry-roll ratio, then adjust loft/bounce for the lie.';
@@ -116,7 +125,7 @@ export function simulateShortGame(inputs: ShortGameInputs): ShortGameResult {
   const swing = swingFactors[inputs.swing];
   const effectiveLoftDeg = clamp(inputs.loftDeg + inputs.faceOpenDeg * 0.62 - inputs.shaftLeanDeg * 0.72, 38, 74);
   const effectiveBounceDeg = clamp(inputs.bounceDeg + inputs.faceOpenDeg * 0.45 - inputs.shaftLeanDeg * 0.28, 1, 24);
-  const usefulBounce = inputs.lie === 'bunker' || inputs.lie === 'rough' || inputs.lie === 'wet-rough' || inputs.lie === 'plugged-bunker'
+  const usefulBounce = inputs.lie === 'bunker' || inputs.lie === 'rough' || inputs.lie === 'wet-rough' || inputs.lie === 'plugged-bunker' || inputs.lie === 'sitting-up' || inputs.lie === 'in-between' || inputs.lie === 'sitting-down' || inputs.lie === 'flier'
     ? effectiveBounceDeg * 0.42
     : -Math.max(0, effectiveBounceDeg - 10) * 0.38;
   const launchDeg = clamp(shot.launch + (effectiveLoftDeg - 56) * 0.38 + lie.launch + usefulBounce + swing.launch, 8, 68);
@@ -147,7 +156,9 @@ export function simulateShortGame(inputs: ShortGameInputs): ShortGameResult {
   const risks = [
     sole === 'skips' ? 'blade/skip risk' : '',
     sole === 'digs' ? 'dig risk' : '',
-    inputs.lie.includes('rough') ? 'flyer/release risk' : '',
+    inputs.lie.includes('rough') || inputs.lie === 'sitting-up' || inputs.lie === 'in-between' ? 'grass-between-face risk' : '',
+    inputs.lie === 'sitting-down' ? 'buried contact risk' : '',
+    inputs.lie === 'flier' ? 'flier/release risk' : '',
     inputs.lie.includes('bunker') && effectiveBounceDeg < 8 ? 'buried leading edge risk' : '',
   ].filter(Boolean);
   const points = Array.from({ length: 34 }, (_, index) => {

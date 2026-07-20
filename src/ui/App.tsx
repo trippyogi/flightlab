@@ -10,6 +10,7 @@ import {
   simulateShortGame,
   type GrassType,
   type LieType,
+  type ShotCategory,
   type ShotType,
   type SwingClock,
   type WedgeType,
@@ -30,6 +31,10 @@ const ydToShortScene = 0.28;
 const shortLieLabels: Record<LieType, string> = {
   fairway: 'Fairway',
   tight: 'Tight',
+  'sitting-up': 'Sitting up',
+  'in-between': 'In between',
+  'sitting-down': 'Sitting down',
+  flier: 'Flier',
   rough: 'Rough',
   'wet-rough': 'Wet rough',
   hardpan: 'Hardpan',
@@ -50,6 +55,31 @@ const shortShotLabels: Record<ShotType, string> = {
   flop: 'Flop',
   blast: 'Blast',
   bump: 'Bump',
+};
+const shortCategoryLabels: Record<ShotCategory, string> = {
+  chip: 'Chip',
+  pitch: 'Pitch',
+  'distance-wedge': 'Distance wedge',
+  sand: 'Sand',
+};
+const categoryDefaults: Record<ShotCategory, { shot: ShotType; carryYd: number; wedge: WedgeType; swing: SwingClock }> = {
+  chip: { shot: 'chip', carryYd: 9, wedge: 'Gap', swing: '7:30' },
+  pitch: { shot: 'pitch', carryYd: 28, wedge: 'Sand', swing: '9:00' },
+  'distance-wedge': { shot: 'pitch', carryYd: 68, wedge: 'Gap', swing: '10:30' },
+  sand: { shot: 'blast', carryYd: 18, wedge: 'Sand', swing: '9:00' },
+};
+const lieVisuals: Record<LieType, { grass: 'low' | 'medium' | 'high'; ball: 'clean' | 'perched' | 'nested' | 'buried'; title: string; note: string }> = {
+  fairway: { grass: 'low', ball: 'clean', title: 'Clean fairway pitch', note: 'Face can reach the ball; spin and carry are most predictable.' },
+  tight: { grass: 'low', ball: 'clean', title: 'Tight lie', note: 'Leading edge matters; too much bounce or lean can skip into the ball.' },
+  'sitting-up': { grass: 'high', ball: 'perched', title: 'Sitting up', note: 'Ball is perched above grass; easy launch, possible high-face contact.' },
+  'in-between': { grass: 'medium', ball: 'nested', title: 'In-between lie', note: 'Some grass gets trapped; expect less spin and a wider landing window.' },
+  'sitting-down': { grass: 'high', ball: 'buried', title: 'Sitting down', note: 'Ball is below the grass tips; contact and spin both get less reliable.' },
+  flier: { grass: 'medium', ball: 'perched', title: 'Flier lie', note: 'Grass moisture/cushion drops friction; launch rides up and release jumps.' },
+  rough: { grass: 'medium', ball: 'nested', title: 'Standard rough', note: 'Grass between face and ball lowers spin and adds release.' },
+  'wet-rough': { grass: 'high', ball: 'nested', title: 'Wet rough', note: 'Moisture cuts friction hard; plan for a bigger skid and rollout.' },
+  hardpan: { grass: 'low', ball: 'clean', title: 'Hardpan', note: 'Firm ground rewards precise low-point control and punishes bounce mismatch.' },
+  bunker: { grass: 'low', ball: 'clean', title: 'Sand lie', note: 'Use sole depth and speed; ball is moved by sand, not clean face friction.' },
+  'plugged-bunker': { grass: 'medium', ball: 'buried', title: 'Plugged bunker', note: 'Steeper entry and less release control; buried leading edge risk rises.' },
 };
 const feedbackEndpoint = import.meta.env.VITE_FEEDBACK_ENDPOINT as string | undefined;
 const impactCameraViews: Record<ImpactView, { label: string }> = {
@@ -706,6 +736,10 @@ function ShortScene() {
   const lieColor: Record<LieType, string> = {
     fairway: '#768e67',
     tight: '#a6ad83',
+    'sitting-up': '#4f753d',
+    'in-between': '#3f6233',
+    'sitting-down': '#2f4d2a',
+    flier: '#5b7b42',
     rough: '#405f34',
     'wet-rough': '#2f5334',
     hardpan: '#b6a470',
@@ -817,6 +851,27 @@ function OptionGroup<T extends string>({
   );
 }
 
+function PitchLieVisual({ lie }: { lie: LieType }) {
+  const visual = lieVisuals[lie];
+  return (
+    <section className="pitch-lie-card" aria-label="pitch lie visual">
+      <div className={clsx('lie-stage', `grass-${visual.grass}`, `ball-${visual.ball}`)} aria-hidden="true">
+        <span className="grass-blade blade-a" />
+        <span className="grass-blade blade-b" />
+        <span className="grass-blade blade-c" />
+        <span className="grass-blade blade-d" />
+        <span className="lie-ball" />
+        <span className="ground-line" />
+      </div>
+      <div>
+        <span>Pitch lie</span>
+        <strong>{visual.title}</strong>
+        <p>{visual.note}</p>
+      </div>
+    </section>
+  );
+}
+
 function ShortPanel() {
   const inputs = useLabStore((state) => state.shortInputs);
   const setShortInput = useLabStore((state) => state.setShortInput);
@@ -841,13 +896,30 @@ function ShortPanel() {
     setShortInput('loftDeg', defaults.loftDeg);
     setShortInput('bounceDeg', defaults.bounceDeg);
   };
+  const setCategory = (category: ShotCategory) => {
+    const preset = categoryDefaults[category];
+    const defaults = shortGameWedgeDefaults[preset.wedge];
+    setShortInput('category', category);
+    setShortInput('shot', preset.shot);
+    setShortInput('carryYd', preset.carryYd);
+    setShortInput('wedge', preset.wedge);
+    setShortInput('swing', preset.swing);
+    setShortInput('loftDeg', defaults.loftDeg);
+    setShortInput('bounceDeg', defaults.bounceDeg);
+    if (category === 'sand' && inputs.lie !== 'bunker' && inputs.lie !== 'plugged-bunker') {
+      setShortInput('lie', 'bunker');
+      setShortInput('grass', 'sand');
+    }
+  };
   return (
     <aside className="panel">
-      <OptionGroup<LieType> label="Lie" value={inputs.lie} options={['fairway', 'tight', 'rough', 'wet-rough', 'hardpan', 'bunker', 'plugged-bunker']} onChange={(value) => setShortInput('lie', value)} labelFor={(value) => shortLieLabels[value]} className="short-lies" />
+      <OptionGroup<ShotCategory> label="Category" value={inputs.category} options={['chip', 'pitch', 'distance-wedge', 'sand']} onChange={setCategory} labelFor={(value) => shortCategoryLabels[value]} className="short-categories" />
+      <OptionGroup<LieType> label="Lie" value={inputs.lie} options={['fairway', 'tight', 'sitting-up', 'in-between', 'sitting-down', 'flier', 'rough', 'wet-rough', 'hardpan', 'bunker', 'plugged-bunker']} onChange={(value) => setShortInput('lie', value)} labelFor={(value) => shortLieLabels[value]} className="short-lies" />
+      <PitchLieVisual lie={inputs.lie} />
       <OptionGroup<GrassType> label="Grass / grain" value={inputs.grass} options={['bent', 'bermuda', 'fescue', 'sand', 'into-grain', 'down-grain']} onChange={(value) => setShortInput('grass', value)} labelFor={(value) => shortGrassLabels[value]} className="short-grass" />
       <OptionGroup<WedgeType> label="Wedge" value={inputs.wedge} options={['Gap', 'Sand', 'Lob']} onChange={setWedge} />
       <OptionGroup<SwingClock> label="Clock" value={inputs.swing} options={['7:30', '9:00', '10:30']} onChange={(value) => setShortInput('swing', value)} />
-      <OptionGroup<ShotType> label="Shot" value={inputs.shot} options={['chip', 'pitch', 'flop', 'blast', 'bump']} onChange={(value) => setShortInput('shot', value)} labelFor={(value) => shortShotLabels[value]} className="five-up" />
+      <OptionGroup<ShotType> label="Shot shape" value={inputs.shot} options={['chip', 'pitch', 'flop', 'blast', 'bump']} onChange={(value) => setShortInput('shot', value)} labelFor={(value) => shortShotLabels[value]} className="five-up" />
       <Slider label="Landing spot" value={inputs.carryYd} min={5} max={80} step={1} unit=" yd" onChange={(v) => setShortInput('carryYd', v)} />
       <Slider label="Loft" value={inputs.loftDeg} min={46} max={64} step={1} unit=" deg" onChange={(v) => setShortInput('loftDeg', v)} />
       <Slider label="Bounce" value={inputs.bounceDeg} min={4} max={16} step={1} unit=" deg" onChange={(v) => setShortInput('bounceDeg', v)} />

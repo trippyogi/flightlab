@@ -54,6 +54,7 @@ export const useLabStore = create<LabState>((set) => ({
   shortInputs: {
     lie: 'fairway',
     grass: 'bent',
+    category: 'pitch',
     shot: 'pitch',
     wedge: 'Sand',
     swing: '9:00',
