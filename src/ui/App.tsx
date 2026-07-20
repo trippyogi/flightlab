@@ -25,7 +25,11 @@ const ftToScene = 0.3048 * greenScale;
 const compassLabels = ['N', 'NE', 'E', 'SE', 'S', 'SW', 'W', 'NW'];
 const parDefaults: Record<HolePar, number> = { par3: 165, par4: 440, par5: 560 };
 const ydToImpactScene = 0.15;
-const impactLateralScale = -0.32;
+const meterToYard = 1.0936133;
+const impactLateralEmphasis = 1.35;
+const impactLateralYdScale = -ydToImpactScene * impactLateralEmphasis;
+const impactTrajectoryScale = ydToImpactScene * meterToYard;
+const impactTrajectoryLateralScale = impactLateralYdScale * meterToYard;
 const fairwayWidthScene = 40 * ydToImpactScene;
 const targetGreenRadiusScene = 10 * ydToImpactScene;
 const ydToShortScene = 0.18;
@@ -316,13 +320,13 @@ function ImpactScene() {
   const cameraView = useMemo(() => impactCameraConfig(impactView, inputs.targetDistanceYd, result.carryYd, result.apexYd), [impactView, inputs.targetDistanceYd, result.carryYd, result.apexYd]);
   const flightLabel = activeFlightPreset(inputs)?.label ?? namedFlight(inputs);
   const sceneTextRotationY = impactView === 'top' ? 0 : Math.PI;
-  const visualLateralScale = impactLateralScale;
+  const visualLateralScale = impactLateralYdScale;
   const sampled = result.points.filter((_, index) => index % 20 === 0).map((point) => point.position);
   const targetZ = inputs.targetDistanceYd * ydToImpactScene;
   const carryZ = result.carryYd * ydToImpactScene;
   const landingX = result.offlineYd * visualLateralScale;
   const dispersionWidthYd = Math.round(Math.max(16, result.carryYd * (inputs.club === 'Driver' ? 0.12 : inputs.club === '6-iron' ? 0.09 : 0.07)));
-  const dispersionHalfX = (dispersionWidthYd / 2) * Math.abs(impactLateralScale);
+  const dispersionHalfX = (dispersionWidthYd / 2) * Math.abs(impactLateralYdScale);
   const dispersionDepth = Math.max(9, result.carryYd * 0.045) * ydToImpactScene;
   const roughLength = Math.max(targetZ + 36, 92);
   const fairwayLength = Math.max(targetZ, 36);
@@ -342,7 +346,7 @@ function ImpactScene() {
   return (
     <>
       <color attach="background" args={['#c7d7c0']} />
-      <fog attach="fog" args={['#c7d7c0', 54, 132]} />
+      {impactView === 'top' ? null : <fog attach="fog" args={['#c7d7c0', 54, 132]} />}
       <ImpactCameraRig view={impactView} targetDistanceYd={inputs.targetDistanceYd} carryYd={result.carryYd} apexYd={result.apexYd} />
       <ambientLight intensity={0.8} />
       <directionalLight position={[4, 8, 5]} intensity={1.6} />
@@ -431,9 +435,9 @@ function ImpactScene() {
         <meshStandardMaterial color="#2a3128" transparent opacity={0.42} roughness={0.82} />
       </mesh>
       {ghosts.map((ghost, index) => (
-        <Trajectory key={ghost.id} points={ghost.points} color="#ece4d3" opacity={0.26 - index * 0.025} scale={ydToImpactScene} lateralScale={visualLateralScale} width={2.6} />
+        <Trajectory key={ghost.id} points={ghost.points} color="#ece4d3" opacity={0.26 - index * 0.025} scale={impactTrajectoryScale} lateralScale={impactTrajectoryLateralScale} width={2.6} />
       ))}
-      <Trajectory points={sampled} color="#e86f23" opacity={0.98} scale={ydToImpactScene} lateralScale={visualLateralScale} width={5.2} />
+      <Trajectory points={sampled} color="#e86f23" opacity={0.98} scale={impactTrajectoryScale} lateralScale={impactTrajectoryLateralScale} width={5.2} />
       <mesh position={[landingX, 0.12, carryZ]} rotation-x={-Math.PI / 2} scale={[dispersionHalfX, dispersionDepth, 1]}>
         <ringGeometry args={[0.9, 1, 72]} />
         <meshBasicMaterial color="#f8efd9" transparent opacity={0.78} />
