@@ -771,7 +771,7 @@ function GreenScene() {
       <ambientLight intensity={0.9} />
       <directionalLight position={[-3, 6, 4]} intensity={1.4} />
       <mesh rotation-x={-Math.PI / 2}>
-        <planeGeometry args={[32, 32, 32, 32]} />
+        <planeGeometry args={[96, 96, 48, 48]} />
         <meshStandardMaterial color="#57794f" roughness={0.9} />
       </mesh>
       <mesh rotation-x={-Math.PI / 2} position={[0, 0.015, -1.2]} scale={[1.18, 0.92, 1]}>
