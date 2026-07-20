@@ -6,6 +6,9 @@
   --olive-900: #1d2c1c;
   --olive-700: #465c3f;
   --olive-500: #6e8766;
+  --course-deep: #213f2b;
+  --course-mid: #4f7a43;
+  --course-light: #8fbf6d;
   --sage-300: #b7c6ad;
   --chalk: #f8efd9;
   --paper: #eee5d1;
@@ -28,6 +31,7 @@
 body {
   margin: 0;
   min-width: 320px;
+  width: 100%;
   min-height: 100vh;
   height: 100vh;
   overflow: hidden;
@@ -41,13 +45,13 @@ input {
 .app {
   display: grid;
   grid-template-columns: 92px minmax(0, 1fr) 360px;
+  width: 100dvw;
   height: 100dvh;
   min-height: 0;
   overflow: hidden;
   background:
-    linear-gradient(90deg, rgba(248, 239, 217, 0.22) 0 1px, transparent 1px 18px),
-    radial-gradient(circle at 18% 12%, rgba(242, 111, 33, 0.16), transparent 28%),
-    linear-gradient(#becbab, #91a384 58%, #d8decf);
+    radial-gradient(circle at 18% 8%, rgba(255, 190, 92, 0.28), transparent 24%),
+    linear-gradient(180deg, #c4d6bd 0 36%, #7ba069 70%, #263f2a 100%);
 }
 
 .module-rail {
@@ -114,8 +118,31 @@ input {
   min-width: 0;
   min-height: 0;
   background:
-    linear-gradient(135deg, rgba(20, 24, 18, 0.12) 0 1px, transparent 1px 18px),
-    linear-gradient(180deg, rgba(248, 239, 217, 0.25), rgba(29, 44, 28, 0.18));
+    linear-gradient(180deg, rgba(217, 230, 203, 0.72) 0 34%, rgba(83, 124, 71, 0.28) 62%, rgba(24, 45, 31, 0.36) 100%);
+}
+
+.stage::before {
+  content: "";
+  position: absolute;
+  inset: 0 0 auto;
+  height: 42%;
+  pointer-events: none;
+  background:
+    radial-gradient(circle at 80% 18%, rgba(255, 223, 139, 0.38), transparent 6%),
+    linear-gradient(180deg, rgba(246, 241, 218, 0.38), rgba(246, 241, 218, 0));
+  z-index: 1;
+}
+
+.stage::after {
+  content: "";
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  height: 22%;
+  pointer-events: none;
+  background: linear-gradient(180deg, transparent, rgba(15, 26, 18, 0.24));
+  z-index: 1;
 }
 
 .scene {
@@ -129,23 +156,96 @@ input {
   left: 24px;
   display: flex;
   gap: 12px;
-  align-items: baseline;
-  color: var(--ink);
+  align-items: center;
+  padding: 7px 12px 8px;
+  border-left: 4px solid var(--amber);
+  border-radius: 2px 6px 6px 2px;
+  background: rgba(19, 25, 18, 0.9);
+  color: var(--chalk);
   pointer-events: none;
-  text-shadow: 0 1px 0 rgba(245, 240, 228, 0.62);
+  text-shadow: none;
+  box-shadow: 0 14px 32px -22px rgba(5, 9, 5, 0.9);
+  z-index: 2;
 }
 
 .hud span {
   font-family: "IBM Plex Mono", ui-monospace, monospace;
   font-size: 13px;
-  text-transform: lowercase;
-  color: var(--charcoal);
+  text-transform: uppercase;
+  color: #aebca4;
 }
 
 .hud strong {
-  font-size: 32px;
+  font-size: 20px;
   font-weight: 650;
   letter-spacing: 0;
+}
+
+.result-hud {
+  position: absolute;
+  left: 24px;
+  bottom: 24px;
+  z-index: 3;
+  display: grid;
+  grid-template-columns: minmax(122px, 1.25fr) repeat(3, minmax(70px, 0.75fr));
+  gap: 8px;
+  align-items: stretch;
+  width: min(620px, calc(100% - 48px));
+  padding: 6px;
+  border: 1px solid rgba(248, 239, 217, 0.3);
+  border-radius: 6px;
+  background:
+    linear-gradient(180deg, rgba(31, 43, 31, 0.94), rgba(14, 19, 14, 0.94));
+  color: var(--chalk);
+  box-shadow: 0 18px 40px -24px rgba(6, 10, 7, 0.9);
+}
+
+.result-hud > span,
+.result-hud small {
+  font-family: "IBM Plex Mono", ui-monospace, monospace;
+  font-size: 10px;
+  text-transform: uppercase;
+  color: #b9c8ae;
+}
+
+.result-hud > strong,
+.result-hud div {
+  min-height: 54px;
+  border: 1px solid rgba(248, 239, 217, 0.13);
+  border-radius: 3px;
+  background: rgba(248, 239, 217, 0.08);
+}
+
+.result-hud > span {
+  position: absolute;
+  top: -18px;
+  left: 8px;
+  padding: 3px 7px;
+  border-radius: 2px;
+  background: #f26f21;
+  color: #17120b;
+}
+
+.result-hud > strong {
+  display: grid;
+  place-items: center;
+  padding: 0 12px;
+  font-size: 22px;
+  line-height: 1;
+  text-transform: capitalize;
+  color: #fff7da;
+}
+
+.result-hud div {
+  display: grid;
+  place-items: center;
+  padding: 6px;
+}
+
+.result-hud b {
+  font-family: "IBM Plex Mono", ui-monospace, monospace;
+  font-size: 20px;
+  color: #ffb454;
 }
 
 .view-switcher {
@@ -188,15 +288,16 @@ input {
   display: flex;
   flex-direction: column;
   gap: 14px;
+  min-width: 0;
   min-height: 0;
   height: 100dvh;
   padding: 20px;
   border-left: 1px solid var(--line-strong);
   background:
-    linear-gradient(135deg, rgba(70, 92, 63, 0.1) 0 10px, transparent 10px 22px),
-    linear-gradient(180deg, rgba(248, 239, 217, 0.96), rgba(238, 229, 209, 0.94));
+    linear-gradient(180deg, rgba(247, 240, 220, 0.97), rgba(226, 219, 197, 0.96));
   backdrop-filter: blur(12px);
   overflow-y: auto;
+  overflow-x: hidden;
   overscroll-behavior: contain;
   box-shadow: -18px 0 36px -34px var(--shadow);
 }
@@ -208,27 +309,27 @@ input {
 }
 
 .segmented {
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   padding: 4px;
   border: 1px solid var(--line);
   border-radius: 8px;
-  background: rgba(20, 24, 18, 0.12);
+  background: rgba(31, 43, 31, 0.18);
 }
 
 .segmented.four-up {
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: repeat(4, minmax(0, 1fr));
 }
 
 .segmented.five-up {
-  grid-template-columns: repeat(5, 1fr);
+  grid-template-columns: repeat(5, minmax(0, 1fr));
 }
 
 .segmented.short-lies {
-  grid-template-columns: repeat(2, 1fr);
+  grid-template-columns: repeat(2, minmax(0, 1fr));
 }
 
 .segmented.short-grass {
-  grid-template-columns: repeat(2, 1fr);
+  grid-template-columns: repeat(2, minmax(0, 1fr));
 }
 
 .segmented button,
@@ -238,9 +339,11 @@ input {
   min-height: 38px;
   border: 1px solid var(--line);
   border-radius: 7px;
-  background: rgba(248, 239, 217, 0.9);
+  background: rgba(250, 243, 224, 0.93);
   color: var(--ink);
   cursor: pointer;
+  min-width: 0;
+  overflow-wrap: anywhere;
   box-shadow: 0 1px 0 rgba(255, 255, 255, 0.58) inset;
   transition: background 150ms ease, border-color 150ms ease, color 150ms ease, transform 150ms ease;
 }
@@ -380,8 +483,9 @@ input[type="range"] {
   grid-template-columns: 1fr auto;
   gap: 4px 12px;
   width: 100%;
-  padding: 10px 12px;
+  padding: 9px 11px;
   text-align: left;
+  background: #f4ecd7;
 }
 
 .readout span {
@@ -1000,6 +1104,27 @@ input[type="range"] {
     max-height: clamp(240px, 42dvh, 380px);
     border-left: 0;
     border-top: 1px solid rgba(28, 36, 31, 0.14);
+  }
+
+  .result-hud {
+    left: 14px;
+    bottom: 14px;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    width: min(430px, calc(100% - 28px));
+  }
+
+  .result-hud > strong {
+    grid-column: 1 / -1;
+    min-height: 42px;
+    font-size: 19px;
+  }
+
+  .result-hud div {
+    min-height: 42px;
+  }
+
+  .result-hud b {
+    font-size: 16px;
   }
 
   .quick-grid {

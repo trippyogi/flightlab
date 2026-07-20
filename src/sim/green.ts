@@ -27,6 +27,7 @@ export type GreenResult = {
   points: RollPoint[];
   rolloutPoints: RollPoint[];
   secondPuttPoints: RollPoint[];
+  secondPuttPacePastFt: number;
   leave: GreenLeave;
   lipSpeedMs: number;
   captureRadiusM: number;
@@ -41,6 +42,8 @@ const g = 9.80665;
 const ftToM = 0.3048;
 const ballRadiusM = 0.021335;
 const cupRadiusM = 0.054;
+const secondPuttPacePastFt = 1.5;
+const secondPuttReadGravityMultiplier = 1.45;
 
 function frictionFromStimp(stimp: number) {
   const releaseMs = 1.83;
@@ -106,6 +109,73 @@ function rollPutt({
   return { points, rolloutPoints, closest, lipSpeedMs, made };
 }
 
+function makeLineSecondPutt({
+  start,
+  target,
+  gravity,
+  friction,
+}: {
+  start: Vec2;
+  target: Vec2;
+  gravity: Vec2;
+  friction: number;
+}) {
+  const toCup: Vec2 = [target[0] - start[0], target[1] - start[1]];
+  const distance = Math.hypot(toCup[0], toCup[1]);
+  if (distance < 0.12) return [] as RollPoint[];
+
+  const directAngle = Math.atan2(toCup[1], toCup[0]);
+  const readGravity: Vec2 = [gravity[0] * secondPuttReadGravityMultiplier, gravity[1] * secondPuttReadGravityMultiplier];
+  let bestPoints: RollPoint[] = [];
+  let bestScore = Number.POSITIVE_INFINITY;
+  let bestAngle = directAngle;
+  let bestSpeedMultiplier = 1;
+
+  const evaluate = (center: number, angleSpan: number, angleSteps: number, speedCenter: number, speedSpan: number, speedSteps: number) => {
+    for (let index = 0; index <= angleSteps; index += 1) {
+      const t = index / angleSteps - 0.5;
+      const angle = center + t * angleSpan;
+      const unit: Vec2 = [Math.cos(angle), Math.sin(angle)];
+      const gravityAlongStart = readGravity[0] * unit[0] + readGravity[1] * unit[1];
+      const baseSpeed = Math.sqrt(Math.max(
+        0.1,
+        2 * friction * (distance + secondPuttPacePastFt * ftToM) - 2 * gravityAlongStart * distance,
+      ));
+      for (let speedIndex = 0; speedIndex <= speedSteps; speedIndex += 1) {
+        const speedT = speedIndex / speedSteps - 0.5;
+        const speedMultiplier = speedCenter + speedT * speedSpan;
+        const speed = baseSpeed * speedMultiplier;
+        const candidate = rollPutt({
+          start,
+          target,
+          initialVelocity: [unit[0] * speed, unit[1] * speed],
+          gravity: readGravity,
+          friction,
+          continueAfterCapture: true,
+        });
+        const rolloutEnd = candidate.rolloutPoints.at(-1)?.position;
+        const pastDistance = rolloutEnd ? Math.hypot(rolloutEnd[0] - target[0], rolloutEnd[1] - target[1]) : Number.POSITIVE_INFINITY;
+        const paceMiss = Math.abs(pastDistance - secondPuttPacePastFt * ftToM);
+        const score = candidate.made ? candidate.closest * 0.85 + paceMiss * 0.75 : 100 + candidate.closest;
+        if (score < bestScore) {
+          bestPoints = candidate.points;
+          bestScore = score;
+          bestAngle = angle;
+          bestSpeedMultiplier = speedMultiplier;
+        }
+      }
+    }
+  };
+
+  evaluate(directAngle, degToRad(220), 72, 1, 0.8, 12);
+  evaluate(bestAngle, degToRad(22), 48, bestSpeedMultiplier, 0.24, 12);
+  const last = bestPoints.at(-1);
+  if (last && Math.hypot(last.position[0] - target[0], last.position[1] - target[1]) > 0.001) {
+    return [...bestPoints, { t: last.t + 0.001, position: target, velocity: [0, 0] as Vec2 }];
+  }
+  return bestPoints;
+}
+
 export function simulateGreen(inputs: GreenInputs): GreenResult {
   const target: Vec2 = [0, 0];
   const start: Vec2 = [0, -inputs.distanceFt * ftToM];
@@ -136,21 +206,17 @@ export function simulateGreen(inputs: GreenInputs): GreenResult {
   const slopeRead = Math.abs(fallComponent) < 0.05 ? 'sidehill' : fallComponent > 0 ? 'downhill' : 'uphill';
   const sideRead = Math.abs(rolloutLast.position[0]) < 0.05 ? 'center' : rolloutLast.position[0] > 0 ? 'high side' : 'low side';
   const heightRead = slopeRead === 'downhill' ? 'above hole' : slopeRead === 'uphill' ? 'below hole' : 'level';
-  const secondPuttPoints = leaveDistanceM < 0.12 ? [] : rollPutt({
+  const secondPuttPoints = makeLineSecondPutt({
     start: rolloutLast.position,
     target,
-    initialVelocity: [
-      (toCup[0] / leaveDistanceM) * Math.sqrt(Math.max(0.1, 2 * friction * (leaveDistanceM + 1.1 * ftToM))),
-      (toCup[1] / leaveDistanceM) * Math.sqrt(Math.max(0.1, 2 * friction * (leaveDistanceM + 1.1 * ftToM))),
-    ],
     gravity,
     friction,
-    continueAfterCapture: false,
-  }).points;
+  });
   return {
     points,
     rolloutPoints,
     secondPuttPoints,
+    secondPuttPacePastFt,
     leave: {
       position: rolloutLast.position,
       distanceFt: leaveDistanceM / ftToM,
@@ -172,4 +238,4 @@ export function simulateGreen(inputs: GreenInputs): GreenResult {
   };
 }
 
-export const greenInternalsForTest = { frictionFromStimp, captureRadius };
+export const greenInternalsForTest = { frictionFromStimp, captureRadius, secondPuttPacePastFt, secondPuttReadGravityMultiplier };

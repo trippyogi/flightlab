@@ -7,6 +7,8 @@ describe('simulateGreen', () => {
     expect(greenInternalsForTest.captureRadius(0.4)).toBeGreaterThan(
       greenInternalsForTest.captureRadius(1.2),
     );
+    expect(greenInternalsForTest.secondPuttPacePastFt).toBe(1.5);
+    expect(greenInternalsForTest.secondPuttReadGravityMultiplier).toBeGreaterThan(1);
   });
 
   it('rolls a straight putt near the cup on a flat green', () => {
@@ -111,7 +113,7 @@ describe('simulateGreen', () => {
     expect(['above hole', 'below hole', 'level']).toContain(result.leave.heightRead);
   });
 
-  it('simulates second-putt break instead of drawing a straight return line', () => {
+  it('simulates the second-putt make line instead of a straight return line', () => {
     const result = simulateGreen({
       distanceFt: 24,
       slopePercent: 4,
@@ -126,6 +128,26 @@ describe('simulateGreen', () => {
     const straightMidX = (start[0] + end[0]) / 2;
 
     expect(result.secondPuttPoints.length).toBeGreaterThan(8);
+    expect(end[0]).toBeCloseTo(0, 6);
+    expect(end[1]).toBeCloseTo(0, 6);
     expect(Math.abs(mid[0] - straightMidX)).toBeGreaterThan(0.015);
+  });
+
+  it('shows a meaningful second-putt read on a short steep sidehill leave', () => {
+    const result = simulateGreen({
+      distanceFt: 4,
+      slopePercent: 5,
+      slopeDirectionDeg: 90,
+      stimp: 10,
+      aimDeg: 20,
+      pacePastFt: 5,
+    });
+    const xs = result.secondPuttPoints.map((point) => point.position[0] / 0.3048);
+    const lateralReadFt = Math.max(...xs) - Math.min(...xs);
+    const end = result.secondPuttPoints.at(-1)!.position;
+
+    expect(lateralReadFt).toBeGreaterThan(1);
+    expect(end[0]).toBeCloseTo(0, 6);
+    expect(end[1]).toBeCloseTo(0, 6);
   });
 });
