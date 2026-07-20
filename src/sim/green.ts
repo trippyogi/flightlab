@@ -46,8 +46,9 @@ const cupRadiusM = 0.054;
 const secondPuttPacePastFt = 1.5;
 // Real greens add imperfections and skid/roll transition that the constant-deceleration
 // model does not capture. Calibrate the return-line read without changing the primary
-// putt receipt model so steep, fast leaves do not visually under-read.
-const secondPuttReadGravityMultiplier = 2.15;
+// putt receipt model, while capping it below rolling resistance so a solved putt cannot
+// reverse direction and draw a physically impossible loop on steep slopes.
+const secondPuttReadGravityMultiplier = 1.6;
 
 function frictionFromStimp(stimp: number) {
   const releaseMs = 1.83;
@@ -129,7 +130,11 @@ function makeLineSecondPutt({
   if (distance < 0.12) return [] as RollPoint[];
 
   const directAngle = Math.atan2(toCup[1], toCup[0]);
-  const readGravity: Vec2 = [gravity[0] * secondPuttReadGravityMultiplier, gravity[1] * secondPuttReadGravityMultiplier];
+  const gravityMagnitude = Math.hypot(gravity[0], gravity[1]);
+  const stableGravityScale = gravityMagnitude > 0
+    ? Math.min(secondPuttReadGravityMultiplier, (friction * 0.92) / gravityMagnitude)
+    : secondPuttReadGravityMultiplier;
+  const readGravity: Vec2 = [gravity[0] * stableGravityScale, gravity[1] * stableGravityScale];
   let bestPoints: RollPoint[] = [];
   let bestScore = Number.POSITIVE_INFINITY;
   let bestAngle = directAngle;

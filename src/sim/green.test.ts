@@ -8,7 +8,7 @@ describe('simulateGreen', () => {
       greenInternalsForTest.captureRadius(1.2),
     );
     expect(greenInternalsForTest.secondPuttPacePastFt).toBe(1.5);
-    expect(greenInternalsForTest.secondPuttReadGravityMultiplier).toBeCloseTo(2.15);
+    expect(greenInternalsForTest.secondPuttReadGravityMultiplier).toBeCloseTo(1.6);
   });
 
   it('rolls a straight putt near the cup on a flat green', () => {
@@ -146,9 +146,32 @@ describe('simulateGreen', () => {
     const lateralReadFt = Math.max(...xs) - Math.min(...xs);
     const end = result.secondPuttPoints.at(-1)!.position;
 
-    expect(lateralReadFt).toBeGreaterThan(1.45);
+    expect(lateralReadFt).toBeGreaterThan(0.9);
     expect(result.secondPuttReadFt).toBeGreaterThan(0.25);
     expect(end[0]).toBeCloseTo(0, 6);
     expect(end[1]).toBeCloseTo(0, 6);
+  });
+
+  it('keeps the high-slope second-putt make line continuous', () => {
+    const result = simulateGreen({
+      distanceFt: 12,
+      slopePercent: 4.25,
+      slopeDirectionDeg: 90,
+      stimp: 10,
+      aimDeg: 0,
+      pacePastFt: 1.4,
+    });
+    const penultimate = result.secondPuttPoints.at(-2)!;
+    const end = result.secondPuttPoints.at(-1)!;
+    const finalSegmentFt = Math.hypot(
+      end.position[0] - penultimate.position[0],
+      end.position[1] - penultimate.position[1],
+    ) / 0.3048;
+
+    expect(result.leave.distanceFt).toBeGreaterThan(5);
+    expect(end.t).toBeLessThan(4);
+    expect(finalSegmentFt).toBeLessThan(0.25);
+    expect(end.position[0]).toBeCloseTo(0, 6);
+    expect(end.position[1]).toBeCloseTo(0, 6);
   });
 });
