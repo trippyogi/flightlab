@@ -109,7 +109,6 @@ const lieVisuals: Record<LieType, { grass: 'low' | 'medium' | 'high'; ball: 'cle
   bunker: { grass: 'low', ball: 'clean', title: 'Sand lie', note: 'Use sole depth and speed; ball is moved by sand, not clean face friction.' },
   'plugged-bunker': { grass: 'medium', ball: 'buried', title: 'Plugged bunker', note: 'Steeper entry and less release control; buried leading edge risk rises.' },
 };
-const feedbackEndpoint = import.meta.env.VITE_FEEDBACK_ENDPOINT as string | undefined;
 const impactCameraViews: Record<ImpactView, { label: string }> = {
   player: { label: 'Player' },
   top: { label: 'Top' },
@@ -697,14 +696,20 @@ function FlightPathIcon({ height, curve }: Pick<FlightPreset, 'height' | 'curve'
   const startX = 32;
   const endX = curve === 'draw' ? 21 : curve === 'fade' ? 43 : 32;
   const controlX = curve === 'draw' ? 40 : curve === 'fade' ? 24 : 32;
+  const finishControlX = curve === 'draw' ? 31 : curve === 'fade' ? 33 : 32;
   const apexY = height === 'high' ? 9 : height === 'low' ? 26 : 17;
-  const path = `M ${startX} 54 C ${controlX} ${38 + (apexY - 17) * 0.28}, ${endX} ${apexY + 15}, ${endX} ${apexY}`;
+  const path = `M ${startX} 54 C ${controlX} ${38 + (apexY - 17) * 0.28}, ${finishControlX} ${apexY + 15}, ${endX} ${apexY}`;
+  const markerId = `flight-arrow-${height}-${curve}`;
 
   return (
     <svg className="flight-icon" viewBox="0 0 64 64" aria-hidden="true">
+      <defs>
+        <marker id={markerId} viewBox="0 0 8 8" refX="7" refY="4" markerWidth="5" markerHeight="5" orient="auto-start-reverse">
+          <path d="M 0 0 L 8 4 L 0 8 Z" />
+        </marker>
+      </defs>
       <path className="flight-icon-grid" d="M10 54H54M18 46H46M25 38H39" />
-      <path className="flight-icon-path" d={path} />
-      <path className="flight-icon-arrow" d={`M ${endX - 4} ${apexY + 8} L ${endX} ${apexY} L ${endX + 4} ${apexY + 8}`} />
+      <path className="flight-icon-path" d={path} markerEnd={`url(#${markerId})`} />
     </svg>
   );
 }
@@ -1325,87 +1330,59 @@ function PlaceholderPanel() {
   );
 }
 
-function FeedbackDock() {
+function CaddieDock() {
   const activeModule = useLabStore((state) => state.activeModule);
   const impactInputs = useLabStore((state) => state.impactInputs);
   const greenInputs = useLabStore((state) => state.greenInputs);
   const shortInputs = useLabStore((state) => state.shortInputs);
   const [open, setOpen] = useState(false);
-  const [kind, setKind] = useState<'bug' | 'idea' | 'confusing'>('bug');
-  const [score, setScore] = useState(3);
-  const [text, setText] = useState('');
-  const [status, setStatus] = useState('');
-  const trimmed = text.trim();
-  const canSubmit = trimmed.length >= 12 && trimmed.length <= 1200;
+  const [question, setQuestion] = useState('');
+  const [answer, setAnswer] = useState('Ask me about the shot, the numbers, or what to change.');
+  const impact = useMemo(() => simulateImpact(impactInputs), [impactInputs]);
+  const green = useMemo(() => simulateGreen(greenInputs, false), [greenInputs]);
+  const short = useMemo(() => simulateShortGame(shortInputs), [shortInputs]);
+  const prompts = activeModule === 'impact'
+    ? ['Why did it curve?', 'How do I hit it higher?', 'What should I change?']
+    : activeModule === 'green'
+      ? ['How much break?', 'Why did it miss?', 'What pace should I use?']
+      : ['Where should it land?', 'Which wedge?', 'How will this lie react?'];
 
-  const submitFeedback = async () => {
-    if (!canSubmit) {
-      setStatus('Add a little more detail.');
-      return;
+  const askCaddie = (rawQuestion = question) => {
+    const query = rawQuestion.trim().toLowerCase();
+    if (!query) return;
+    if (activeModule === 'impact') {
+      if (query.includes('curve') || query.includes('why')) setAnswer(`Face-to-path is ${nf.format(impact.faceToPathDeg)}°. That relationship is creating the ${directionalLabel(impact.curveBiasDeg, impactInputs.handedness, 'fade', 'draw')}; move face and path closer together to straighten it.`);
+      else if (query.includes('higher') || query.includes('launch')) setAnswer(`Launch is ${nf.format(impact.launchAngleDeg)}°. Add dynamic loft or move attack upward; watch spin loft so height does not become excess spin.`);
+      else setAnswer(`This shot carries ${Math.round(impact.carryYd)} yd and finishes ${nf.format(Math.abs(impact.offlineYd))} yd offline. Start by neutralizing the ${nf.format(impact.faceToPathDeg)}° face-to-path gap.`);
+    } else if (activeModule === 'green') {
+      if (query.includes('break') || query.includes('line')) setAnswer(`The modeled break is ${nf.format(Math.abs(green.breakFt))} ft ${green.breakFt > 0 ? 'left' : 'right'}. Aim and pace work together—more pace takes out break but shrinks the capture window.`);
+      else if (query.includes('pace') || query.includes('speed')) setAnswer(`Current pace finishes ${nf.format(green.stopPastFt)} ft past. A 1–2 ft finish is a solid practice window; faster entry speed makes the cup play smaller.`);
+      else setAnswer(green.made ? `That line is captured at ${nf.format(green.lipSpeedMs)} m/s. The cup is accepting about ${nf.format(green.captureRadiusM / 0.0254)} inches.` : `The leave is ${nf.format(green.leave.distanceFt)} ft, ${green.leave.sideRead}. Adjust line toward the high side before adding speed.`);
+    } else {
+      if (query.includes('land') || query.includes('where')) setAnswer(`Land it near ${nf.format(short.carryYd)} yd. The current window is ${nf.format(short.landingWindowYd)} yd and releases ${nf.format(short.rolloutYd)} yd after carry.`);
+      else if (query.includes('wedge') || query.includes('club')) setAnswer(`${shortInputs.wedge} wedge at ${shortInputs.swing} produces a ${short.carryRollRatio} carry-roll pattern here. Change wedge when you need a different launch window, not just more distance.`);
+      else setAnswer(`${shortLieLabels[shortInputs.lie]}: ${short.recommendation} Expect ${short.surfaceReaction}.`);
     }
-    const payload = {
-      id: crypto.randomUUID(),
-      createdAt: new Date().toISOString(),
-      kind,
-      score,
-      text: trimmed,
-      context: {
-        activeModule,
-        url: window.location.href,
-        viewport: { width: window.innerWidth, height: window.innerHeight },
-        userAgent: navigator.userAgent,
-        inputs: activeModule === 'impact' ? impactInputs : activeModule === 'green' ? greenInputs : activeModule === 'short' ? shortInputs : null,
-      },
-    };
-    const existing = JSON.parse(localStorage.getItem('flightlab.feedback') ?? '[]') as unknown[];
-    localStorage.setItem('flightlab.feedback', JSON.stringify([...existing, payload].slice(-100)));
-    setStatus('Stored locally.');
-    if (feedbackEndpoint) {
-      try {
-        const response = await fetch(feedbackEndpoint, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(payload),
-          keepalive: true,
-        });
-        setStatus(response.ok ? 'Sent and stored.' : 'Stored locally; send failed.');
-      } catch {
-        setStatus('Stored locally; offline send failed.');
-      }
-    }
-    setText('');
+    setQuestion('');
   };
 
   return (
-    <div className={clsx('feedback-dock', open && 'open')}>
-      <button type="button" className="feedback-toggle" onClick={() => setOpen(!open)} aria-expanded={open}>
+    <div className={clsx('caddie-dock', open && 'open')}>
+      <button type="button" className="caddie-toggle" onClick={() => setOpen(!open)} aria-expanded={open}>
         <MessageSquare size={18} />
-        <span>Feedback</span>
+        <span>Virtual Caddie</span>
       </button>
       {open ? (
-        <section className="feedback-panel" aria-label="flightlab feedback">
-          <div className="feedback-row">
-            {(['bug', 'confusing', 'idea'] as const).map((option) => (
-              <button key={option} type="button" className={clsx(kind === option && 'active')} aria-pressed={kind === option} onClick={() => setKind(option)}>
-                {option}
-              </button>
-            ))}
+        <section className="caddie-panel" aria-label="virtual caddie">
+          <header><span>Caddie says</span><b>LIVE READ</b></header>
+          <p className="caddie-answer">{answer}</p>
+          <div className="caddie-prompts">
+            {prompts.map((prompt) => <button type="button" key={prompt} onClick={() => askCaddie(prompt)}>{prompt}</button>)}
           </div>
-          <label className="control feedback-score">
-            <span>Signal<b>{score}/5</b></span>
-            <input type="range" min={1} max={5} step={1} value={score} onChange={(event) => setScore(Number(event.currentTarget.value))} />
-          </label>
-          <textarea
-            value={text}
-            minLength={12}
-            maxLength={1200}
-            placeholder="What broke, confused you, or would make this better?"
-            onChange={(event) => setText(event.currentTarget.value)}
-          />
-          <div className="feedback-actions">
-            <span>{status || `${trimmed.length}/1200`}</span>
-            <button type="button" onClick={submitFeedback} disabled={!canSubmit}>Send</button>
-          </div>
+          <form onSubmit={(event) => { event.preventDefault(); askCaddie(); }}>
+            <input value={question} onChange={(event) => setQuestion(event.currentTarget.value)} placeholder="Ask about this shot…" aria-label="Ask the virtual caddie" />
+            <button type="submit" disabled={!question.trim()}>Ask</button>
+          </form>
         </section>
       ) : null}
     </div>
@@ -1513,7 +1490,7 @@ export function App() {
         <ResultHud />
       </section>
       {activeModule === 'impact' ? <ImpactPanel /> : activeModule === 'green' ? <GreenPanel /> : activeModule === 'short' ? <ShortPanel /> : <PlaceholderPanel />}
-      <FeedbackDock />
+      <CaddieDock />
     </main>
   );
 }
