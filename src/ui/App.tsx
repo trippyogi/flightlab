@@ -1,7 +1,8 @@
-import { Canvas, useThree } from '@react-three/fiber';
+import { Canvas, useFrame, useThree } from '@react-three/fiber';
 import { Line, OrbitControls, Text } from '@react-three/drei';
 import { Activity, CircleDot, FlaskConical, Gauge, MessageSquare, Target } from 'lucide-react';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { MathUtils, PerspectiveCamera, Vector3 } from 'three';
 import { clsx } from 'clsx';
 import { clubDefaults, namedFlight, simulateImpact, type ClubName, type Handedness, type HolePar, type ImpactInputs } from '../sim/impact';
 import { simulateGreen } from '../sim/green';
@@ -238,6 +239,7 @@ function impactCameraConfig(view: ImpactView, targetDistanceYd: number, carryYd:
       position: [0, Math.max(128, shotDepth * 1.78), midZ] as [number, number, number],
       target: [0, 0, midZ] as [number, number, number],
       up: [0, 0, 1] as [number, number, number],
+      fov: impactCameraFov.top,
       maxPolar: 0.08,
     };
   }
@@ -250,6 +252,7 @@ function impactCameraConfig(view: ImpactView, targetDistanceYd: number, carryYd:
       position: [-Math.max(66, carryDepth * 1.22, apexScene * 5), targetY + Math.max(5, apexScene * 0.18), carryMidZ] as [number, number, number],
       target: [0, targetY, carryMidZ] as [number, number, number],
       up: [0, 1, 0] as [number, number, number],
+      fov: impactCameraFov.side,
       maxPolar: Math.PI / 2.02,
     };
   }
@@ -257,6 +260,7 @@ function impactCameraConfig(view: ImpactView, targetDistanceYd: number, carryYd:
     position: [0, 3.2, -24] as [number, number, number],
     target: [0, 2.6, Math.min(72, shotDepth * 0.72)] as [number, number, number],
     up: [0, 1, 0] as [number, number, number],
+    fov: impactCameraFov.player,
     maxPolar: Math.PI / 2.02,
   };
 }
@@ -264,12 +268,23 @@ function impactCameraConfig(view: ImpactView, targetDistanceYd: number, carryYd:
 function ImpactCameraRig({ view, targetDistanceYd, carryYd, apexYd }: { view: ImpactView; targetDistanceYd: number; carryYd: number; apexYd: number }) {
   const { camera } = useThree();
   const config = useMemo(() => impactCameraConfig(view, targetDistanceYd, carryYd, apexYd), [view, targetDistanceYd, carryYd, apexYd]);
-  useEffect(() => {
-    camera.position.set(...config.position);
-    camera.up.set(...config.up);
-    camera.lookAt(...config.target);
-    camera.updateProjectionMatrix();
-  }, [camera, config]);
+  const lookTarget = useRef(new Vector3(...config.target));
+  const desiredPosition = useMemo(() => new Vector3(...config.position), [config.position]);
+  const desiredUp = useMemo(() => new Vector3(...config.up), [config.up]);
+  const desiredTarget = useMemo(() => new Vector3(...config.target), [config.target]);
+  /* eslint-disable react-hooks/immutability -- R3F camera rigs animate Three.js objects imperatively each frame. */
+  useFrame((_, delta) => {
+    const blend = 1 - Math.exp(-delta * 4.6);
+    camera.position.lerp(desiredPosition, blend);
+    camera.up.lerp(desiredUp, blend).normalize();
+    lookTarget.current.lerp(desiredTarget, blend);
+    camera.lookAt(lookTarget.current);
+    if (camera instanceof PerspectiveCamera) {
+      camera.fov = MathUtils.lerp(camera.fov, config.fov, blend);
+      camera.updateProjectionMatrix();
+    }
+  });
+  /* eslint-enable react-hooks/immutability */
   return null;
 }
 
@@ -346,7 +361,7 @@ function ImpactScene() {
   return (
     <>
       <color attach="background" args={['#c7d7c0']} />
-      {impactView === 'top' ? null : <fog attach="fog" args={['#c7d7c0', 54, 132]} />}
+      <fog attach="fog" args={['#c7d7c0', 54, 260]} />
       <ImpactCameraRig view={impactView} targetDistanceYd={inputs.targetDistanceYd} carryYd={result.carryYd} apexYd={result.apexYd} />
       <ambientLight intensity={0.8} />
       <directionalLight position={[4, 8, 5]} intensity={1.6} />
@@ -1312,7 +1327,7 @@ export function App() {
       <ModuleRail />
       <section className="stage">
         <div className="scene">
-          <Canvas key={`${activeModule}-${impactView}`} camera={camera} dpr={[1, 1.75]}>
+          <Canvas key={activeModule} camera={camera} dpr={[1, 1.75]}>
             {activeModule === 'impact' ? <ImpactScene /> : activeModule === 'green' ? <GreenScene /> : activeModule === 'short' ? <ShortScene /> : null}
           </Canvas>
         </div>
