@@ -394,7 +394,24 @@ function ImpactScene() {
           </mesh>
         </group>
       ))}
-      <gridHelper args={[Math.max(72, targetZ + 20), 18, '#e3eed6', '#66845b']} position={[0, 0.01, targetZ * 0.5]} />
+      {[0.25, 0.5, 0.75].map((fraction) => (
+        <mesh key={fraction} rotation-x={-Math.PI / 2} position={[0, 0.012, targetZ * fraction]}>
+          <planeGeometry args={[fairwayWidthScene * 0.94, 0.045]} />
+          <meshBasicMaterial color="#e4eed8" transparent opacity={0.32} />
+        </mesh>
+      ))}
+      {[-1, 1].map((side) => (
+        <group key={side} position={[side * 36, -2.2, targetZ * 0.7]}>
+          <mesh scale={[1.5, 0.42, 1]}>
+            <sphereGeometry args={[15, 32, 16]} />
+            <meshStandardMaterial color={side < 0 ? '#365b39' : '#426b42'} roughness={1} />
+          </mesh>
+          <mesh position={[side * 4, 1.8, 5]} scale={[1, 0.32, 0.8]}>
+            <sphereGeometry args={[12, 28, 14]} />
+            <meshStandardMaterial color="#53794a" roughness={1} />
+          </mesh>
+        </group>
+      ))}
       <mesh position={[0, 0.25, 0]}>
         <sphereGeometry args={[0.32, 32, 16]} />
         <meshStandardMaterial color="#f7f1e3" roughness={0.46} />
@@ -680,7 +697,20 @@ function GreenScene() {
         <ringGeometry args={[11.6, 11.76, 112]} />
         <meshBasicMaterial color="#f1e7bd" transparent opacity={0.42} />
       </mesh>
-      <gridHelper args={[28, 14, '#e1efd6', '#6d8d62']} position={[0, 0.04, 0]} />
+      {[4, 8, 12].map((radius) => (
+        <mesh key={radius} position={[0, 0.041, 0]} rotation-x={-Math.PI / 2}>
+          <ringGeometry args={[radius, radius + 0.035, 96]} />
+          <meshBasicMaterial color="#e8efd8" transparent opacity={0.18} />
+        </mesh>
+      ))}
+      {[-1, 1].map((side) => (
+        <group key={side} position={[side * 16, -3.8, 8]}>
+          <mesh scale={[1.25, 0.46, 1]}>
+            <sphereGeometry args={[11, 32, 16]} />
+            <meshStandardMaterial color={side < 0 ? '#3f643d' : '#4c7045'} roughness={1} />
+          </mesh>
+        </group>
+      ))}
       <GreenReadingMap distanceFt={inputs.distanceFt} slopePercent={inputs.slopePercent} slopeDirectionDeg={inputs.slopeDirectionDeg} aimDeg={inputs.aimDeg} />
       <mesh position={[0, 0.07, 0]} rotation-x={-Math.PI / 2}>
         <ringGeometry args={[result.captureRadiusM * greenScale, 0.29, 48]} />
@@ -847,7 +877,20 @@ function ShortScene() {
         <circleGeometry args={[0.64, 42]} />
         <meshBasicMaterial color="#d7c58a" transparent opacity={0.82} />
       </mesh>
-      <gridHelper args={[Math.max(18, groundLength), 12, '#dce9d2', '#65835d']} position={[0, 0.02, groundLength * 0.5 - 4]} />
+      {[0.25, 0.5, 0.75].map((fraction) => (
+        <mesh key={fraction} rotation-x={-Math.PI / 2} position={[0, 0.021, groundLength * fraction - 2]}>
+          <planeGeometry args={[10, 0.035]} />
+          <meshBasicMaterial color="#e4eed8" transparent opacity={0.22} />
+        </mesh>
+      ))}
+      {[-1, 1].map((side) => (
+        <group key={side} position={[side * 12, -2.5, greenCenterZ + 4]}>
+          <mesh scale={[1.2, 0.42, 1]}>
+            <sphereGeometry args={[9, 28, 14]} />
+            <meshStandardMaterial color={side < 0 ? '#385e39' : '#466d42'} roughness={1} />
+          </mesh>
+        </group>
+      ))}
       <mesh position={[0, 0.12, 0]}>
         <sphereGeometry args={[0.11, 24, 12]} />
         <meshStandardMaterial color="#f8f2e4" roughness={0.42} />
