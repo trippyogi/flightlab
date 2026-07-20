@@ -10,7 +10,9 @@ import {
   simulateShortGame,
   type GrassType,
   type LieType,
+  type ShotCategory,
   type ShotType,
+  type SwingClock,
   type WedgeType,
 } from '../sim/shortGame';
 import { modules } from '../modules/registry';
@@ -26,6 +28,59 @@ const impactLateralScale = -0.32;
 const fairwayWidthScene = 40 * ydToImpactScene;
 const targetGreenRadiusScene = 10 * ydToImpactScene;
 const ydToShortScene = 0.28;
+const shortLieLabels: Record<LieType, string> = {
+  fairway: 'Fairway',
+  tight: 'Tight',
+  'sitting-up': 'Sitting up',
+  'in-between': 'In between',
+  'sitting-down': 'Sitting down',
+  flier: 'Flier',
+  rough: 'Rough',
+  'wet-rough': 'Wet rough',
+  hardpan: 'Hardpan',
+  bunker: 'Bunker',
+  'plugged-bunker': 'Plugged',
+};
+const shortGrassLabels: Record<GrassType, string> = {
+  bent: 'Bent',
+  bermuda: 'Bermuda',
+  fescue: 'Fescue',
+  sand: 'Sand',
+  'into-grain': 'Into grain',
+  'down-grain': 'Down grain',
+};
+const shortShotLabels: Record<ShotType, string> = {
+  chip: 'Chip',
+  pitch: 'Pitch',
+  flop: 'Flop',
+  blast: 'Blast',
+  bump: 'Bump',
+};
+const shortCategoryLabels: Record<ShotCategory, string> = {
+  chip: 'Chip',
+  pitch: 'Pitch',
+  'distance-wedge': 'Distance wedge',
+  sand: 'Sand',
+};
+const categoryDefaults: Record<ShotCategory, { shot: ShotType; carryYd: number; wedge: WedgeType; swing: SwingClock }> = {
+  chip: { shot: 'chip', carryYd: 9, wedge: 'Gap', swing: '7:30' },
+  pitch: { shot: 'pitch', carryYd: 28, wedge: 'Sand', swing: '9:00' },
+  'distance-wedge': { shot: 'pitch', carryYd: 68, wedge: 'Gap', swing: '10:30' },
+  sand: { shot: 'blast', carryYd: 18, wedge: 'Sand', swing: '9:00' },
+};
+const lieVisuals: Record<LieType, { grass: 'low' | 'medium' | 'high'; ball: 'clean' | 'perched' | 'nested' | 'buried'; title: string; note: string }> = {
+  fairway: { grass: 'low', ball: 'clean', title: 'Clean fairway pitch', note: 'Face can reach the ball; spin and carry are most predictable.' },
+  tight: { grass: 'low', ball: 'clean', title: 'Tight lie', note: 'Leading edge matters; too much bounce or lean can skip into the ball.' },
+  'sitting-up': { grass: 'high', ball: 'perched', title: 'Sitting up', note: 'Ball is perched above grass; easy launch, possible high-face contact.' },
+  'in-between': { grass: 'medium', ball: 'nested', title: 'In-between lie', note: 'Some grass gets trapped; expect less spin and a wider landing window.' },
+  'sitting-down': { grass: 'high', ball: 'buried', title: 'Sitting down', note: 'Ball is below the grass tips; contact and spin both get less reliable.' },
+  flier: { grass: 'medium', ball: 'perched', title: 'Flier lie', note: 'Grass moisture/cushion drops friction; launch rides up and release jumps.' },
+  rough: { grass: 'medium', ball: 'nested', title: 'Standard rough', note: 'Grass between face and ball lowers spin and adds release.' },
+  'wet-rough': { grass: 'high', ball: 'nested', title: 'Wet rough', note: 'Moisture cuts friction hard; plan for a bigger skid and rollout.' },
+  hardpan: { grass: 'low', ball: 'clean', title: 'Hardpan', note: 'Firm ground rewards precise low-point control and punishes bounce mismatch.' },
+  bunker: { grass: 'low', ball: 'clean', title: 'Sand lie', note: 'Use sole depth and speed; ball is moved by sand, not clean face friction.' },
+  'plugged-bunker': { grass: 'medium', ball: 'buried', title: 'Plugged bunker', note: 'Steeper entry and less release control; buried leading edge risk rises.' },
+};
 const feedbackEndpoint = import.meta.env.VITE_FEEDBACK_ENDPOINT as string | undefined;
 const impactCameraViews: Record<ImpactView, { label: string }> = {
   player: { label: 'Player' },
@@ -681,8 +736,15 @@ function ShortScene() {
   const lieColor: Record<LieType, string> = {
     fairway: '#768e67',
     tight: '#a6ad83',
+    'sitting-up': '#4f753d',
+    'in-between': '#3f6233',
+    'sitting-down': '#2f4d2a',
+    flier: '#5b7b42',
     rough: '#405f34',
+    'wet-rough': '#2f5334',
+    hardpan: '#b6a470',
     bunker: '#d8c384',
+    'plugged-bunker': '#cab169',
   };
   const flightPoints = useMemo(() => result.points.filter((_, index) => index % 2 === 0), [result.points]);
   const landingZ = result.carryYd * ydToShortScene;
@@ -705,7 +767,7 @@ function ShortScene() {
         <circleGeometry args={[2.1, 48]} />
         <meshStandardMaterial color={lieColor[inputs.lie]} roughness={0.96} />
       </mesh>
-      {inputs.lie === 'bunker' ? (
+      {inputs.lie === 'bunker' || inputs.lie === 'plugged-bunker' ? (
         <mesh rotation-x={-Math.PI / 2} position={[0, 0.03, -0.2]}>
           <ringGeometry args={[1.35, 2.1, 64]} />
           <meshBasicMaterial color="#f1e3b0" transparent opacity={0.65} />
@@ -726,9 +788,24 @@ function ShortScene() {
       </mesh>
       <Trajectory points={flightPoints} color="#e86f23" opacity={0.98} scale={ydToShortScene} width={5.2} />
       <Trajectory points={result.rollPoints} color="#f8efd9" opacity={0.82} scale={ydToShortScene} width={4.2} dashed />
+      {result.missWindows.filter((miss) => miss.label !== 'clean').map((miss, index) => (
+        <Trajectory
+          key={miss.label}
+          points={[[index === 0 ? 0.42 : -0.42, 0.05, miss.carryYd], [index === 0 ? 0.9 : -0.9, 0.05, miss.totalYd]]}
+          color={index === 0 ? '#301b12' : '#6a5842'}
+          opacity={0.48}
+          scale={ydToShortScene}
+          width={2.1}
+          dashed
+        />
+      ))}
       <mesh rotation-x={-Math.PI / 2} position={[0, 0.1, landingZ]}>
         <ringGeometry args={[0.36, 0.52, 48]} />
         <meshBasicMaterial color="#e86f23" transparent opacity={0.9} />
+      </mesh>
+      <mesh rotation-x={-Math.PI / 2} position={[0, 0.085, landingZ]} scale={[result.landingWindowYd * ydToShortScene * 0.5, 0.42, 1]}>
+        <ringGeometry args={[0.92, 1, 56]} />
+        <meshBasicMaterial color="#f8efd9" transparent opacity={0.45} />
       </mesh>
       <mesh rotation-x={-Math.PI / 2} position={[0, 0.08, totalZ]}>
         <ringGeometry args={[0.42, 0.58, 48]} />
@@ -738,7 +815,7 @@ function ShortScene() {
         lands {nf.format(result.carryYd)} yd
       </Text>
       <Text position={[0, 1.1, totalZ + 0.6]} rotation-y={Math.PI} fontSize={0.7} color="#f8efd9">
-        {result.check}
+        {result.carryRollRatio} · {result.check}
       </Text>
       <OrbitControls makeDefault enablePan={false} target={[0, 1.8, Math.max(6, totalZ * 0.52)]} maxPolarAngle={Math.PI / 2.08} />
     </>
@@ -751,12 +828,14 @@ function OptionGroup<T extends string>({
   options,
   onChange,
   className,
+  labelFor,
 }: {
   label: string;
   value: T;
   options: readonly T[];
   onChange: (value: T) => void;
   className?: string;
+  labelFor?: (value: T) => string;
 }) {
   return (
     <section className="option-group" aria-label={label}>
@@ -764,9 +843,30 @@ function OptionGroup<T extends string>({
       <div className={clsx('segmented', className)}>
         {options.map((option) => (
           <button key={option} type="button" className={clsx(value === option && 'active')} aria-pressed={value === option} onClick={() => onChange(option)}>
-            {option}
+            {labelFor ? labelFor(option) : option}
           </button>
         ))}
+      </div>
+    </section>
+  );
+}
+
+function PitchLieVisual({ lie }: { lie: LieType }) {
+  const visual = lieVisuals[lie];
+  return (
+    <section className="pitch-lie-card" aria-label="pitch lie visual">
+      <div className={clsx('lie-stage', `grass-${visual.grass}`, `ball-${visual.ball}`)} aria-hidden="true">
+        <span className="grass-blade blade-a" />
+        <span className="grass-blade blade-b" />
+        <span className="grass-blade blade-c" />
+        <span className="grass-blade blade-d" />
+        <span className="lie-ball" />
+        <span className="ground-line" />
+      </div>
+      <div>
+        <span>Pitch lie</span>
+        <strong>{visual.title}</strong>
+        <p>{visual.note}</p>
       </div>
     </section>
   );
@@ -777,29 +877,93 @@ function ShortPanel() {
   const setShortInput = useLabStore((state) => state.setShortInput);
   const result = useMemo(() => simulateShortGame(inputs), [inputs]);
   const manifest = modules.find((module) => module.id === 'short')!;
+  const shortMatrix = useMemo(() => (['Gap', 'Sand', 'Lob'] as WedgeType[]).map((wedge) => {
+    const defaults = shortGameWedgeDefaults[wedge];
+    return {
+      wedge,
+      carries: (['7:30', '9:00', '10:30'] as SwingClock[]).map((swing) => Math.round(simulateShortGame({
+        ...inputs,
+        wedge,
+        swing,
+        loftDeg: defaults.loftDeg,
+        bounceDeg: defaults.bounceDeg,
+      }).carryYd)),
+    };
+  }), [inputs]);
   const setWedge = (wedge: WedgeType) => {
     const defaults = shortGameWedgeDefaults[wedge];
     setShortInput('wedge', wedge);
     setShortInput('loftDeg', defaults.loftDeg);
     setShortInput('bounceDeg', defaults.bounceDeg);
   };
+  const setCategory = (category: ShotCategory) => {
+    const preset = categoryDefaults[category];
+    const defaults = shortGameWedgeDefaults[preset.wedge];
+    setShortInput('category', category);
+    setShortInput('shot', preset.shot);
+    setShortInput('carryYd', preset.carryYd);
+    setShortInput('wedge', preset.wedge);
+    setShortInput('swing', preset.swing);
+    setShortInput('loftDeg', defaults.loftDeg);
+    setShortInput('bounceDeg', defaults.bounceDeg);
+    if (category === 'sand' && inputs.lie !== 'bunker' && inputs.lie !== 'plugged-bunker') {
+      setShortInput('lie', 'bunker');
+      setShortInput('grass', 'sand');
+    }
+  };
   return (
     <aside className="panel">
-      <OptionGroup<LieType> label="Lie" value={inputs.lie} options={['fairway', 'tight', 'rough', 'bunker']} onChange={(value) => setShortInput('lie', value)} className="four-up" />
-      <OptionGroup<GrassType> label="Grass" value={inputs.grass} options={['bent', 'bermuda', 'fescue', 'sand']} onChange={(value) => setShortInput('grass', value)} className="four-up" />
+      <OptionGroup<ShotCategory> label="Category" value={inputs.category} options={['chip', 'pitch', 'distance-wedge', 'sand']} onChange={setCategory} labelFor={(value) => shortCategoryLabels[value]} className="short-categories" />
+      <OptionGroup<LieType> label="Lie" value={inputs.lie} options={['fairway', 'tight', 'sitting-up', 'in-between', 'sitting-down', 'flier', 'rough', 'wet-rough', 'hardpan', 'bunker', 'plugged-bunker']} onChange={(value) => setShortInput('lie', value)} labelFor={(value) => shortLieLabels[value]} className="short-lies" />
+      <PitchLieVisual lie={inputs.lie} />
+      <OptionGroup<GrassType> label="Grass / grain" value={inputs.grass} options={['bent', 'bermuda', 'fescue', 'sand', 'into-grain', 'down-grain']} onChange={(value) => setShortInput('grass', value)} labelFor={(value) => shortGrassLabels[value]} className="short-grass" />
       <OptionGroup<WedgeType> label="Wedge" value={inputs.wedge} options={['Gap', 'Sand', 'Lob']} onChange={setWedge} />
-      <OptionGroup<ShotType> label="Shot" value={inputs.shot} options={['chip', 'pitch', 'flop', 'blast', 'bump']} onChange={(value) => setShortInput('shot', value)} className="five-up" />
-      <Slider label="Carry target" value={inputs.carryYd} min={5} max={80} step={1} unit=" yd" onChange={(v) => setShortInput('carryYd', v)} />
+      <OptionGroup<SwingClock> label="Clock" value={inputs.swing} options={['7:30', '9:00', '10:30']} onChange={(value) => setShortInput('swing', value)} />
+      <OptionGroup<ShotType> label="Shot shape" value={inputs.shot} options={['chip', 'pitch', 'flop', 'blast', 'bump']} onChange={(value) => setShortInput('shot', value)} labelFor={(value) => shortShotLabels[value]} className="five-up" />
+      <Slider label="Landing spot" value={inputs.carryYd} min={5} max={80} step={1} unit=" yd" onChange={(v) => setShortInput('carryYd', v)} />
       <Slider label="Loft" value={inputs.loftDeg} min={46} max={64} step={1} unit=" deg" onChange={(v) => setShortInput('loftDeg', v)} />
       <Slider label="Bounce" value={inputs.bounceDeg} min={4} max={16} step={1} unit=" deg" onChange={(v) => setShortInput('bounceDeg', v)} />
+      <Slider label="Face open" value={inputs.faceOpenDeg} min={0} max={18} step={1} unit=" deg" onChange={(v) => setShortInput('faceOpenDeg', v)} />
+      <Slider label="Shaft lean" value={inputs.shaftLeanDeg} min={-2} max={12} step={1} unit=" deg" onChange={(v) => setShortInput('shaftLeanDeg', v)} />
       <Slider label="Firmness" value={inputs.greenFirmness} min={1} max={5} step={1} onChange={(v) => setShortInput('greenFirmness', v)} />
       <section className="short-lesson-card" aria-label="short game relationship">
         <strong>{inputs.lie === 'bunker' ? 'Use the sole' : inputs.lie === 'tight' ? 'Respect the leading edge' : inputs.lie === 'rough' ? 'Expect less friction' : 'Clean contact window'}</strong>
-        <p>Bounce, lie and grass set contact quality first; loft and shot type shape launch; spin plus firmness decide whether the ball checks or releases.</p>
+        <p>{result.recommendation}</p>
+        <div className="short-chips">
+          <span>{result.soleInteraction}</span>
+          <span>{result.carryRollRatio} carry-roll</span>
+          <span>{nf.format(result.landingWindowYd)} yd window</span>
+        </div>
+        {result.risks.length ? <p className="risk-line">{result.risks.join(' / ')}</p> : null}
+      </section>
+      <section className="short-outcome-card" aria-label="short game miss outcomes">
+        <span>Miss pattern</span>
+        {result.missWindows.map((miss) => (
+          <div key={miss.label} className="outcome-row">
+            <strong>{miss.label}</strong>
+            <b>{Math.round(miss.carryYd)} / {Math.round(miss.totalYd)} yd</b>
+            <p>{miss.note}</p>
+          </div>
+        ))}
+      </section>
+      <section className="short-matrix-card" aria-label="Pelz style clock matrix">
+        <div className="matrix-head">
+          <span>Clock matrix</span>
+          <b>carry yd</b>
+        </div>
+        <div className="matrix-labels"><span /> <span>7:30</span><span>9:00</span><span>10:30</span></div>
+        {shortMatrix.map((row) => (
+          <div key={row.wedge} className="matrix-row">
+            <strong>{row.wedge}</strong>
+            {row.carries.map((carry, index) => <span key={`${row.wedge}:${index}`}>{carry}</span>)}
+          </div>
+        ))}
       </section>
       <div className="readouts" aria-live="polite">
         <Readout label="Launch" value={`${nf.format(result.launchDeg)} deg`} receipt={result.receipts.launch} />
         <Readout label="Spin" value={`${result.spinRpm} rpm`} receipt={result.receipts.spin} />
+        <Readout label="Effective loft" value={`${nf.format(result.effectiveLoftDeg)} deg`} receipt={result.receipts.bounce} />
+        <Readout label="Effective bounce" value={`${nf.format(result.effectiveBounceDeg)} deg`} receipt={result.receipts.bounce} />
         <Readout label="Apex" value={`${nf.format(result.apexFt)} ft`} />
         <Readout label="Carry" value={`${nf.format(result.carryYd)} yd`} />
         <Readout label="Rollout" value={`${nf.format(result.rolloutYd)} yd`} receipt={result.receipts.rollout} />
