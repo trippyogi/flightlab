@@ -838,6 +838,10 @@ function ShortScene() {
         </mesh>
       ))}
       <group position={[0, 0, greenCenterZ]}>
+        <mesh rotation-x={-Math.PI / 2} position={[-0.1, -0.045, 0.45]} scale={[1.36, 0.93, 1]}>
+          <circleGeometry args={[4.55, 96]} />
+          <meshStandardMaterial color="#688958" roughness={0.93} />
+        </mesh>
         <mesh rotation-x={-Math.PI / 2} position={[-0.8, -0.02, -0.15]} scale={[1.28, 0.86, 1]}>
           <circleGeometry args={[4.15, 96]} />
           <meshStandardMaterial color="#8faf78" roughness={0.84} />
@@ -858,6 +862,20 @@ function ShortScene() {
           <ringGeometry args={[2.3, 2.38, 96]} />
           <meshBasicMaterial color="#f8efd9" transparent opacity={0.4} />
         </mesh>
+        <group position={[0.85, 0, 0.85]}>
+          <mesh position={[0, 1.25, 0]}>
+            <cylinderGeometry args={[0.025, 0.025, 2.5, 12]} />
+            <meshStandardMaterial color="#f5f0e4" roughness={0.5} />
+          </mesh>
+          <mesh position={[0.34, 2.05, 0]}>
+            <planeGeometry args={[0.68, 0.48]} />
+            <meshBasicMaterial color="#e86f23" side={2} />
+          </mesh>
+          <mesh rotation-x={-Math.PI / 2} position={[0, 0.055, 0]}>
+            <circleGeometry args={[0.12, 32]} />
+            <meshBasicMaterial color="#172019" />
+          </mesh>
+        </group>
       </group>
       <mesh rotation-x={-Math.PI / 2} position={[0, 0.01, -0.2]}>
         <circleGeometry args={[1.15, 48]} />
@@ -928,7 +946,7 @@ function ShortScene() {
         <ringGeometry args={[0.22, 0.31, 48]} />
         <meshBasicMaterial color="#f8efd9" transparent opacity={0.72} />
       </mesh>
-      <OrbitControls makeDefault enablePan={false} target={[0, 1.4, Math.max(4.5, totalZ * 0.52)]} maxPolarAngle={Math.PI / 2.08} />
+      <OrbitControls makeDefault enablePan={false} target={[0, 0.8, Math.max(3.2, totalZ * 0.62)]} maxPolarAngle={Math.PI / 2.08} />
     </>
   );
 }
@@ -1254,7 +1272,7 @@ export function App() {
   const camera = activeModule === 'green'
     ? { position: [0, 13, -15] as [number, number, number], fov: 48 }
     : activeModule === 'short'
-      ? { position: [0, 9.5, -14] as [number, number, number], fov: 52 }
+      ? { position: [0, 5.4, -8.5] as [number, number, number], fov: 47 }
     : { position: [0, 3.2, -24] as [number, number, number], fov: impactCameraFov[impactView] };
   return (
     <main className="app">
