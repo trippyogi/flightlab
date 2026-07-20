@@ -6,6 +6,7 @@ export type ShotType = 'chip' | 'pitch' | 'flop' | 'blast' | 'bump';
 export type ShotCategory = 'chip' | 'pitch' | 'distance-wedge' | 'sand';
 export type WedgeType = 'Gap' | 'Sand' | 'Lob';
 export type SwingClock = '7:30' | '9:00' | '10:30';
+export type GreenScenario = 'level' | 'upslope' | 'downslope' | 'crowned' | 'backstop';
 
 export type ShortGameInputs = {
   lie: LieType;
@@ -20,6 +21,7 @@ export type ShortGameInputs = {
   faceOpenDeg: number;
   shaftLeanDeg: number;
   greenFirmness: number;
+  greenScenario: GreenScenario;
 };
 
 export type ShortGameResult = {
@@ -37,6 +39,9 @@ export type ShortGameResult = {
   soleInteraction: 'digs' | 'glides' | 'skips' | 'explodes';
   contactQuality: number;
   landingWindowYd: number;
+  firstBounceYd: number;
+  secondBounceYd: number;
+  surfaceReaction: string;
   recommendation: string;
   risks: string[];
   points: Vec3[];
@@ -90,6 +95,14 @@ const swingFactors: Record<SwingClock, { carry: number; spin: number; launch: nu
   '10:30': { carry: 1.42, spin: 1.13, launch: 2 },
 };
 
+const greenScenarioFactors: Record<GreenScenario, { rollout: number; bounce: number; breakYd: number; reaction: string }> = {
+  level: { rollout: 1, bounce: 1, breakYd: 0, reaction: 'neutral first bounce' },
+  upslope: { rollout: 0.68, bounce: 0.72, breakYd: 0, reaction: 'kills speed into the slope' },
+  downslope: { rollout: 1.42, bounce: 1.26, breakYd: 0, reaction: 'skids forward after landing' },
+  crowned: { rollout: 1.12, bounce: 1.08, breakYd: 1.8, reaction: 'kicks off the crown' },
+  backstop: { rollout: 0.78, bounce: 0.86, breakYd: -0.9, reaction: 'rides into the backstop' },
+};
+
 function ratioLabel(carryYd: number, rolloutYd: number) {
   const carry = Math.max(1, carryYd);
   const roll = Math.max(0.2, rolloutYd);
@@ -123,6 +136,7 @@ export function simulateShortGame(inputs: ShortGameInputs): ShortGameResult {
   const grass = grassFactors[inputs.grass];
   const shot = shotFactors[inputs.shot];
   const swing = swingFactors[inputs.swing];
+  const surface = greenScenarioFactors[inputs.greenScenario];
   const effectiveLoftDeg = clamp(inputs.loftDeg + inputs.faceOpenDeg * 0.62 - inputs.shaftLeanDeg * 0.72, 38, 74);
   const effectiveBounceDeg = clamp(inputs.bounceDeg + inputs.faceOpenDeg * 0.45 - inputs.shaftLeanDeg * 0.28, 1, 24);
   const usefulBounce = inputs.lie === 'bunker' || inputs.lie === 'rough' || inputs.lie === 'wet-rough' || inputs.lie === 'plugged-bunker' || inputs.lie === 'sitting-up' || inputs.lie === 'in-between' || inputs.lie === 'sitting-down' || inputs.lie === 'flier'
@@ -142,8 +156,10 @@ export function simulateShortGame(inputs: ShortGameInputs): ShortGameResult {
   const spinStop = clamp((spinRpm - 2800) / 6200, 0, 1);
   const descentDeg = clamp(launchDeg + 16 + spinStop * 12, 18, 72);
   const firmness = 0.72 + inputs.greenFirmness * 0.16;
-  const rolloutYd = clamp(carryYd * 0.18 * shot.rollout * lie.rollout * grass.rollout * firmness * (1.22 - spinStop * 0.72), 0.5, 44);
+  const rolloutYd = clamp(carryYd * 0.18 * shot.rollout * lie.rollout * grass.rollout * firmness * surface.rollout * (1.22 - spinStop * 0.72), 0.5, 44);
   const totalYd = carryYd + rolloutYd;
+  const firstBounceYd = clamp(rolloutYd * 0.28 * surface.bounce * (1.16 - spinStop * 0.42), 0.2, Math.max(0.3, rolloutYd * 0.62));
+  const secondBounceYd = clamp(rolloutYd * 0.18 * surface.bounce * (1.08 - spinStop * 0.36), 0.1, Math.max(0.2, rolloutYd * 0.44));
   const apexFt = Math.max(2, carryYd * Math.tan(degToRad(launchDeg)) * 0.42);
   const check = rolloutYd < carryYd * 0.12 ? 'grabs' : rolloutYd > carryYd * 0.38 ? 'runs' : 'releases';
   const sole = soleInteraction(inputs, effectiveBounceDeg, lie.risk);
@@ -167,7 +183,12 @@ export function simulateShortGame(inputs: ShortGameInputs): ShortGameResult {
     const y = (apexFt / 3) * 4 * t * (1 - t);
     return [0, y, z] as Vec3;
   });
-  const rollPoints: Vec3[] = [[0, 0.05, carryYd], [0, 0.05, totalYd]];
+  const rollPoints: Vec3[] = [
+    [0, 0.05, carryYd],
+    [surface.breakYd * 0.28, 0.05, carryYd + firstBounceYd],
+    [surface.breakYd * 0.72, 0.05, Math.min(totalYd, carryYd + firstBounceYd + secondBounceYd)],
+    [surface.breakYd, 0.05, totalYd],
+  ];
   return {
     launchDeg,
     spinRpm,
@@ -183,6 +204,9 @@ export function simulateShortGame(inputs: ShortGameInputs): ShortGameResult {
     soleInteraction: sole,
     contactQuality,
     landingWindowYd,
+    firstBounceYd,
+    secondBounceYd,
+    surfaceReaction: surface.reaction,
     recommendation: recommendation(inputs, rolloutYd, contactQuality, sole),
     risks,
     points,
@@ -191,7 +215,7 @@ export function simulateShortGame(inputs: ShortGameInputs): ShortGameResult {
     receipts: {
       launch: 'Launch blends shot type, effective loft, lie penalty, swing clock, and effective bounce.',
       spin: 'Spin is effective loft plus speed, reduced by grass or sand between face and ball; rough/wet/sand lower friction.',
-      rollout: 'Rollout scales with shot type, lie, grass/grain, firmness, descent angle, and spin-stop factor.',
+      rollout: 'Rollout scales with shot type, lie, grass/grain, firmness, descent angle, spin-stop factor, and landing-surface contour.',
       bounce: 'Effective bounce rises when the face opens and falls with forward shaft lean.',
     },
   };

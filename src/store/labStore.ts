@@ -64,6 +64,7 @@ export const useLabStore = create<LabState>((set) => ({
     faceOpenDeg: 0,
     shaftLeanDeg: 2,
     greenFirmness: 3,
+    greenScenario: 'crowned',
   },
   ghosts: [],
   setActiveModule: (activeModule) => set({ activeModule }),

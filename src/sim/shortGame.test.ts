@@ -14,6 +14,7 @@ const base: ShortGameInputs = {
   faceOpenDeg: 0,
   shaftLeanDeg: 2,
   greenFirmness: 3,
+  greenScenario: 'level',
 };
 
 describe('simulateShortGame', () => {
@@ -88,5 +89,15 @@ describe('simulateShortGame', () => {
 
     expect(medium.carryYd).toBeGreaterThan(short.carryYd);
     expect(long.carryYd).toBeGreaterThan(medium.carryYd);
+  });
+
+  it('lets landing surface contour change bounce and rollout', () => {
+    const upslope = simulateShortGame({ ...base, greenScenario: 'upslope' });
+    const downslope = simulateShortGame({ ...base, greenScenario: 'downslope' });
+    const crowned = simulateShortGame({ ...base, greenScenario: 'crowned' });
+
+    expect(downslope.rolloutYd).toBeGreaterThan(upslope.rolloutYd);
+    expect(downslope.firstBounceYd).toBeGreaterThan(upslope.firstBounceYd);
+    expect(crowned.rollPoints.at(-1)?.[0]).toBeGreaterThan(0);
   });
 });

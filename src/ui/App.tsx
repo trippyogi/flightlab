@@ -8,6 +8,7 @@ import { simulateGreen } from '../sim/green';
 import {
   shortGameWedgeDefaults,
   simulateShortGame,
+  type GreenScenario,
   type GrassType,
   type LieType,
   type ShotCategory,
@@ -27,7 +28,7 @@ const ydToImpactScene = 0.15;
 const impactLateralScale = -0.32;
 const fairwayWidthScene = 40 * ydToImpactScene;
 const targetGreenRadiusScene = 10 * ydToImpactScene;
-const ydToShortScene = 0.28;
+const ydToShortScene = 0.18;
 const shortLieLabels: Record<LieType, string> = {
   fairway: 'Fairway',
   tight: 'Tight',
@@ -61,6 +62,13 @@ const shortCategoryLabels: Record<ShotCategory, string> = {
   pitch: 'Pitch',
   'distance-wedge': 'Distance wedge',
   sand: 'Sand',
+};
+const greenScenarioLabels: Record<GreenScenario, string> = {
+  level: 'Level',
+  upslope: 'Upslope',
+  downslope: 'Downslope',
+  crowned: 'Crowned',
+  backstop: 'Backstop',
 };
 const categoryDefaults: Record<ShotCategory, { shot: ShotType; carryYd: number; wedge: WedgeType; swing: SwingClock }> = {
   chip: { shot: 'chip', carryYd: 9, wedge: 'Gap', swing: '7:30' },
@@ -750,44 +758,65 @@ function ShortScene() {
   const landingZ = result.carryYd * ydToShortScene;
   const totalZ = result.totalYd * ydToShortScene;
   const targetZ = inputs.carryYd * ydToShortScene;
-  const greenCenterZ = Math.max(targetZ + 2.8, totalZ - 1.8);
+  const firstBounceZ = (result.carryYd + result.firstBounceYd) * ydToShortScene;
+  const secondBounceZ = (result.carryYd + result.firstBounceYd + result.secondBounceYd) * ydToShortScene;
+  const greenCenterZ = Math.max(targetZ + 2.1, totalZ - 1.2);
+  const groundLength = Math.max(24, totalZ + 11);
   return (
     <>
       <ambientLight intensity={0.88} />
       <directionalLight position={[-3, 7, 4]} intensity={1.45} />
-      <mesh rotation-x={-Math.PI / 2} position={[0, -0.05, 8]}>
-        <planeGeometry args={[24, 34]} />
+      <mesh rotation-x={-Math.PI / 2} position={[0, -0.05, groundLength * 0.5 - 4]}>
+        <planeGeometry args={[20, groundLength]} />
         <meshStandardMaterial color="#4f6649" roughness={0.94} />
       </mesh>
-      <mesh rotation-x={-Math.PI / 2} position={[0, -0.02, greenCenterZ]}>
-        <circleGeometry args={[4.7, 72]} />
-        <meshStandardMaterial color="#89a579" roughness={0.84} />
-      </mesh>
+      <group position={[0, 0, greenCenterZ]}>
+        <mesh rotation-x={-Math.PI / 2} position={[-0.8, -0.02, -0.15]} scale={[1.28, 0.86, 1]}>
+          <circleGeometry args={[4.15, 96]} />
+          <meshStandardMaterial color="#8faf78" roughness={0.84} />
+        </mesh>
+        <mesh rotation-x={-Math.PI / 2} position={[2.15, inputs.greenScenario === 'backstop' ? 0.2 : 0.06, 1.2]} scale={[0.82, 0.62, 1]}>
+          <circleGeometry args={[3.05, 80]} />
+          <meshStandardMaterial color={inputs.greenScenario === 'downslope' ? '#7f9e70' : '#96b984'} roughness={0.82} />
+        </mesh>
+        <mesh rotation-x={-Math.PI / 2} position={[-2.25, inputs.greenScenario === 'crowned' ? 0.16 : 0.02, 1.6]} scale={[0.7, 0.58, 1]}>
+          <circleGeometry args={[2.35, 72]} />
+          <meshStandardMaterial color="#7fa16f" roughness={0.88} />
+        </mesh>
+        <mesh rotation-x={-Math.PI / 2} position={[0.15, 0.12, inputs.greenScenario === 'upslope' ? -1.1 : 0.05]} scale={[1.4, 0.62, 1]}>
+          <ringGeometry args={[2.5, 2.58, 96]} />
+          <meshBasicMaterial color="#d8cf76" transparent opacity={inputs.greenScenario === 'level' ? 0.24 : 0.48} />
+        </mesh>
+        <mesh rotation-x={-Math.PI / 2} position={[0.6, 0.17, inputs.greenScenario === 'backstop' ? 2.4 : -1.9]} scale={[1.15, 0.36, 1]}>
+          <ringGeometry args={[2.3, 2.38, 96]} />
+          <meshBasicMaterial color="#f8efd9" transparent opacity={0.4} />
+        </mesh>
+      </group>
       <mesh rotation-x={-Math.PI / 2} position={[0, 0.01, -0.2]}>
-        <circleGeometry args={[2.1, 48]} />
+        <circleGeometry args={[1.15, 48]} />
         <meshStandardMaterial color={lieColor[inputs.lie]} roughness={0.96} />
       </mesh>
       {inputs.lie === 'bunker' || inputs.lie === 'plugged-bunker' ? (
         <mesh rotation-x={-Math.PI / 2} position={[0, 0.03, -0.2]}>
-          <ringGeometry args={[1.35, 2.1, 64]} />
+          <ringGeometry args={[0.74, 1.15, 64]} />
           <meshBasicMaterial color="#f1e3b0" transparent opacity={0.65} />
         </mesh>
       ) : null}
-      <mesh rotation-x={-Math.PI / 2} position={[-3.15, 0.015, greenCenterZ - 0.9]}>
-        <circleGeometry args={[1.05, 42]} />
+      <mesh rotation-x={-Math.PI / 2} position={[-2.95, 0.08, greenCenterZ - 0.72]}>
+        <circleGeometry args={[0.72, 42]} />
         <meshBasicMaterial color="#d7c58a" transparent opacity={0.88} />
       </mesh>
-      <mesh rotation-x={-Math.PI / 2} position={[2.9, 0.015, greenCenterZ + 1.15]}>
-        <circleGeometry args={[0.95, 42]} />
+      <mesh rotation-x={-Math.PI / 2} position={[2.65, 0.08, greenCenterZ + 0.96]}>
+        <circleGeometry args={[0.64, 42]} />
         <meshBasicMaterial color="#d7c58a" transparent opacity={0.82} />
       </mesh>
-      <gridHelper args={[28, 14, '#f5f0e4', '#9aaa91']} position={[0, 0.02, 7]} />
-      <mesh position={[0, 0.22, 0]}>
-        <sphereGeometry args={[0.22, 24, 12]} />
+      <gridHelper args={[Math.max(18, groundLength), 12, '#f5f0e4', '#9aaa91']} position={[0, 0.02, groundLength * 0.5 - 4]} />
+      <mesh position={[0, 0.12, 0]}>
+        <sphereGeometry args={[0.11, 24, 12]} />
         <meshStandardMaterial color="#f8f2e4" roughness={0.42} />
       </mesh>
-      <Trajectory points={flightPoints} color="#e86f23" opacity={0.98} scale={ydToShortScene} width={5.2} />
-      <Trajectory points={result.rollPoints} color="#f8efd9" opacity={0.82} scale={ydToShortScene} width={4.2} dashed />
+      <Trajectory points={flightPoints} color="#e86f23" opacity={0.98} scale={ydToShortScene} width={3.8} />
+      <Trajectory points={result.rollPoints} color="#f8efd9" opacity={0.82} scale={ydToShortScene} width={3.2} dashed />
       {result.missWindows.filter((miss) => miss.label !== 'clean').map((miss, index) => (
         <Trajectory
           key={miss.label}
@@ -800,24 +829,32 @@ function ShortScene() {
         />
       ))}
       <mesh rotation-x={-Math.PI / 2} position={[0, 0.1, landingZ]}>
-        <ringGeometry args={[0.36, 0.52, 48]} />
+        <ringGeometry args={[0.18, 0.27, 48]} />
         <meshBasicMaterial color="#e86f23" transparent opacity={0.9} />
       </mesh>
       <mesh rotation-x={-Math.PI / 2} position={[0, 0.085, landingZ]} scale={[result.landingWindowYd * ydToShortScene * 0.5, 0.42, 1]}>
-        <ringGeometry args={[0.92, 1, 56]} />
+        <ringGeometry args={[0.58, 0.64, 56]} />
         <meshBasicMaterial color="#f8efd9" transparent opacity={0.45} />
       </mesh>
+      <mesh rotation-x={-Math.PI / 2} position={[0, 0.11, firstBounceZ]}>
+        <ringGeometry args={[0.11, 0.18, 36]} />
+        <meshBasicMaterial color="#301b12" transparent opacity={0.58} />
+      </mesh>
+      <mesh rotation-x={-Math.PI / 2} position={[0, 0.1, secondBounceZ]}>
+        <ringGeometry args={[0.08, 0.14, 36]} />
+        <meshBasicMaterial color="#301b12" transparent opacity={0.42} />
+      </mesh>
       <mesh rotation-x={-Math.PI / 2} position={[0, 0.08, totalZ]}>
-        <ringGeometry args={[0.42, 0.58, 48]} />
+        <ringGeometry args={[0.22, 0.31, 48]} />
         <meshBasicMaterial color="#f8efd9" transparent opacity={0.72} />
       </mesh>
-      <Text position={[0, 1.05, landingZ]} rotation-y={Math.PI} fontSize={0.7} color="#f8efd9">
+      <Text position={[0, 0.72, landingZ]} rotation-y={Math.PI} fontSize={0.45} color="#f8efd9">
         lands {nf.format(result.carryYd)} yd
       </Text>
-      <Text position={[0, 1.1, totalZ + 0.6]} rotation-y={Math.PI} fontSize={0.7} color="#f8efd9">
+      <Text position={[0, 0.76, totalZ + 0.45]} rotation-y={Math.PI} fontSize={0.45} color="#f8efd9">
         {result.carryRollRatio} · {result.check}
       </Text>
-      <OrbitControls makeDefault enablePan={false} target={[0, 1.8, Math.max(6, totalZ * 0.52)]} maxPolarAngle={Math.PI / 2.08} />
+      <OrbitControls makeDefault enablePan={false} target={[0, 1.4, Math.max(4.5, totalZ * 0.52)]} maxPolarAngle={Math.PI / 2.08} />
     </>
   );
 }
@@ -925,6 +962,7 @@ function ShortPanel() {
       <Slider label="Bounce" value={inputs.bounceDeg} min={4} max={16} step={1} unit=" deg" onChange={(v) => setShortInput('bounceDeg', v)} />
       <Slider label="Face open" value={inputs.faceOpenDeg} min={0} max={18} step={1} unit=" deg" onChange={(v) => setShortInput('faceOpenDeg', v)} />
       <Slider label="Shaft lean" value={inputs.shaftLeanDeg} min={-2} max={12} step={1} unit=" deg" onChange={(v) => setShortInput('shaftLeanDeg', v)} />
+      <OptionGroup<GreenScenario> label="Green shape" value={inputs.greenScenario} options={['level', 'upslope', 'downslope', 'crowned', 'backstop']} onChange={(value) => setShortInput('greenScenario', value)} labelFor={(value) => greenScenarioLabels[value]} className="five-up" />
       <Slider label="Firmness" value={inputs.greenFirmness} min={1} max={5} step={1} onChange={(v) => setShortInput('greenFirmness', v)} />
       <section className="short-lesson-card" aria-label="short game relationship">
         <strong>{inputs.lie === 'bunker' ? 'Use the sole' : inputs.lie === 'tight' ? 'Respect the leading edge' : inputs.lie === 'rough' ? 'Expect less friction' : 'Clean contact window'}</strong>
@@ -933,6 +971,7 @@ function ShortPanel() {
           <span>{result.soleInteraction}</span>
           <span>{result.carryRollRatio} carry-roll</span>
           <span>{nf.format(result.landingWindowYd)} yd window</span>
+          <span>{result.surfaceReaction}</span>
         </div>
         {result.risks.length ? <p className="risk-line">{result.risks.join(' / ')}</p> : null}
       </section>
@@ -967,6 +1006,7 @@ function ShortPanel() {
         <Readout label="Apex" value={`${nf.format(result.apexFt)} ft`} />
         <Readout label="Carry" value={`${nf.format(result.carryYd)} yd`} />
         <Readout label="Rollout" value={`${nf.format(result.rolloutYd)} yd`} receipt={result.receipts.rollout} />
+        <Readout label="First bounce" value={`${nf.format(result.firstBounceYd)} yd`} receipt={result.receipts.rollout} />
         <Readout label="Total" value={`${nf.format(result.totalYd)} yd`} />
         <Readout label="Contact" value={`${Math.round(result.contactQuality * 100)}%`} receipt="Contact quality is a simple first-pass lie/bounce model: high bounce helps sand and rough, but too much bounce can make tight lies harder." />
       </div>
