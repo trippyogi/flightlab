@@ -282,6 +282,13 @@ function pathBounds(points: readonly (readonly [number, number, number])[]) {
   };
 }
 
+function sampledPath<T>(points: readonly T[], stride: number) {
+  const sampled = points.filter((_, index) => index % stride === 0);
+  const last = points.at(-1);
+  if (last && sampled.at(-1) !== last) sampled.push(last);
+  return sampled;
+}
+
 function GreenCameraRig({ points }: { points: readonly (readonly [number, number, number])[] }) {
   const { camera } = useThree();
   const config = useMemo(() => {
@@ -644,10 +651,10 @@ function FlightPathIcon({ height, curve }: Pick<FlightPreset, 'height' | 'curve'
 function GreenScene() {
   const inputs = useLabStore((state) => state.greenInputs);
   const result = useMemo(() => simulateGreen(inputs), [inputs]);
-  const points = useMemo(() => result.points.filter((_, index) => index % 8 === 0).map((point) => [point.position[0] * greenScale, 0.13, point.position[1] * greenScale] as [number, number, number]), [result.points]);
-  const rolloutPoints = useMemo(() => result.rolloutPoints.filter((_, index) => index % 8 === 0).map((point) => [point.position[0] * greenScale, 0.135, point.position[1] * greenScale] as [number, number, number]), [result.rolloutPoints]);
+  const points = useMemo(() => sampledPath(result.points, 8).map((point) => [point.position[0] * greenScale, 0.13, point.position[1] * greenScale] as [number, number, number]), [result.points]);
+  const rolloutPoints = useMemo(() => sampledPath(result.rolloutPoints, 8).map((point) => [point.position[0] * greenScale, 0.135, point.position[1] * greenScale] as [number, number, number]), [result.rolloutPoints]);
   const leavePoint = useMemo(() => [result.leave.position[0] * greenScale, 0.16, result.leave.position[1] * greenScale] as [number, number, number], [result.leave.position]);
-  const secondPuttPoints = useMemo(() => result.secondPuttPoints.filter((_, index) => index % 8 === 0).map((point) => [point.position[0] * greenScale, 0.16, point.position[1] * greenScale] as [number, number, number]), [result.secondPuttPoints]);
+  const secondPuttPoints = useMemo(() => sampledPath(result.secondPuttPoints, 8).map((point) => [point.position[0] * greenScale, 0.16, point.position[1] * greenScale] as [number, number, number]), [result.secondPuttPoints]);
   const cameraPoints = useMemo(() => [...points, ...rolloutPoints, ...secondPuttPoints], [points, rolloutPoints, secondPuttPoints]);
   const cameraTarget = useMemo(() => {
     const bounds = pathBounds(cameraPoints);
@@ -747,7 +754,7 @@ function GreenPanel() {
       <section className="leave-card" aria-label="second putt leave">
         <span>Second putt</span>
         <strong>{nf.format(result.leave.distanceFt)} ft · {result.leave.slopeRead}</strong>
-        <p>{result.leave.heightRead}, {result.leave.sideRead}. The dashed return line simulates the next putt's break back to the cup.</p>
+        <p>{result.leave.heightRead}, {result.leave.sideRead}. Dashed line is the make line at {nf.format(result.secondPuttPacePastFt)} ft past speed and stops at the cup.</p>
       </section>
       <div className="readouts" aria-live="polite">
         <Readout label="Lip speed" value={`${nf.format(result.lipSpeedMs)} m/s`} receipt={result.receipts.capture} />

@@ -27,6 +27,7 @@ export type GreenResult = {
   points: RollPoint[];
   rolloutPoints: RollPoint[];
   secondPuttPoints: RollPoint[];
+  secondPuttPacePastFt: number;
   leave: GreenLeave;
   lipSpeedMs: number;
   captureRadiusM: number;
@@ -41,6 +42,7 @@ const g = 9.80665;
 const ftToM = 0.3048;
 const ballRadiusM = 0.021335;
 const cupRadiusM = 0.054;
+const secondPuttPacePastFt = 1.5;
 
 function frictionFromStimp(stimp: number) {
   const releaseMs = 1.83;
@@ -106,6 +108,64 @@ function rollPutt({
   return { points, rolloutPoints, closest, lipSpeedMs, made };
 }
 
+function makeLineSecondPutt({
+  start,
+  target,
+  gravity,
+  friction,
+}: {
+  start: Vec2;
+  target: Vec2;
+  gravity: Vec2;
+  friction: number;
+}) {
+  const toCup: Vec2 = [target[0] - start[0], target[1] - start[1]];
+  const distance = Math.hypot(toCup[0], toCup[1]);
+  if (distance < 0.12) return [] as RollPoint[];
+
+  const directAngle = Math.atan2(toCup[1], toCup[0]);
+  let bestPoints: RollPoint[] = [];
+  let bestScore = Number.POSITIVE_INFINITY;
+  let bestAngle = directAngle;
+
+  const evaluate = (center: number, span: number, steps: number) => {
+    for (let index = 0; index <= steps; index += 1) {
+      const t = index / steps - 0.5;
+      const angle = center + t * span;
+      const unit: Vec2 = [Math.cos(angle), Math.sin(angle)];
+      const gravityAlongStart = gravity[0] * unit[0] + gravity[1] * unit[1];
+      const speed = Math.sqrt(Math.max(
+        0.1,
+        2 * friction * (distance + secondPuttPacePastFt * ftToM) - 2 * gravityAlongStart * distance,
+      ));
+      const candidate = rollPutt({
+        start,
+        target,
+        initialVelocity: [unit[0] * speed, unit[1] * speed],
+        gravity,
+        friction,
+        continueAfterCapture: false,
+      });
+      const last = candidate.points.at(-1)?.position ?? start;
+      const finishMiss = Math.hypot(last[0] - target[0], last[1] - target[1]);
+      const score = candidate.closest + finishMiss * 0.18 + (candidate.made ? -0.2 : 0);
+      if (score < bestScore) {
+        bestPoints = candidate.points;
+        bestScore = score;
+        bestAngle = angle;
+      }
+    }
+  };
+
+  evaluate(directAngle, degToRad(220), 140);
+  evaluate(bestAngle, degToRad(18), 90);
+  const last = bestPoints.at(-1);
+  if (last && Math.hypot(last.position[0] - target[0], last.position[1] - target[1]) > 0.001) {
+    return [...bestPoints, { t: last.t + 0.001, position: target, velocity: [0, 0] as Vec2 }];
+  }
+  return bestPoints;
+}
+
 export function simulateGreen(inputs: GreenInputs): GreenResult {
   const target: Vec2 = [0, 0];
   const start: Vec2 = [0, -inputs.distanceFt * ftToM];
@@ -136,21 +196,17 @@ export function simulateGreen(inputs: GreenInputs): GreenResult {
   const slopeRead = Math.abs(fallComponent) < 0.05 ? 'sidehill' : fallComponent > 0 ? 'downhill' : 'uphill';
   const sideRead = Math.abs(rolloutLast.position[0]) < 0.05 ? 'center' : rolloutLast.position[0] > 0 ? 'high side' : 'low side';
   const heightRead = slopeRead === 'downhill' ? 'above hole' : slopeRead === 'uphill' ? 'below hole' : 'level';
-  const secondPuttPoints = leaveDistanceM < 0.12 ? [] : rollPutt({
+  const secondPuttPoints = makeLineSecondPutt({
     start: rolloutLast.position,
     target,
-    initialVelocity: [
-      (toCup[0] / leaveDistanceM) * Math.sqrt(Math.max(0.1, 2 * friction * (leaveDistanceM + 1.1 * ftToM))),
-      (toCup[1] / leaveDistanceM) * Math.sqrt(Math.max(0.1, 2 * friction * (leaveDistanceM + 1.1 * ftToM))),
-    ],
     gravity,
     friction,
-    continueAfterCapture: false,
-  }).points;
+  });
   return {
     points,
     rolloutPoints,
     secondPuttPoints,
+    secondPuttPacePastFt,
     leave: {
       position: rolloutLast.position,
       distanceFt: leaveDistanceM / ftToM,
@@ -172,4 +228,4 @@ export function simulateGreen(inputs: GreenInputs): GreenResult {
   };
 }
 
-export const greenInternalsForTest = { frictionFromStimp, captureRadius };
+export const greenInternalsForTest = { frictionFromStimp, captureRadius, secondPuttPacePastFt };
