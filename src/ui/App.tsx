@@ -251,7 +251,7 @@ function impactCameraConfig(view: ImpactView, targetDistanceYd: number, carryYd:
   }
   return {
     position: [0, 3.2, -24] as [number, number, number],
-    target: [0, 4.5, Math.min(72, shotDepth * 0.72)] as [number, number, number],
+    target: [0, 2.6, Math.min(72, shotDepth * 0.72)] as [number, number, number],
     up: [0, 1, 0] as [number, number, number],
     maxPolar: Math.PI / 2.02,
   };
@@ -368,6 +368,16 @@ function ImpactScene() {
         <circleGeometry args={[targetGreenRadiusScene, 64]} />
         <meshStandardMaterial color="#8fa67f" roughness={0.86} />
       </mesh>
+      <group position={[0, 0, targetZ]}>
+        <mesh position={[0, 1.5, 0]}>
+          <cylinderGeometry args={[0.035, 0.035, 3, 12]} />
+          <meshStandardMaterial color="#f5f0e4" roughness={0.5} />
+        </mesh>
+        <mesh position={[0.45, 2.48, 0]}>
+          <planeGeometry args={[0.9, 0.58]} />
+          <meshBasicMaterial color="#e86f23" side={2} />
+        </mesh>
+      </group>
       <mesh rotation-x={-Math.PI / 2} position={[-2.8, 0.035, targetZ - 0.75]}>
         <circleGeometry args={[0.8, 40]} />
         <meshBasicMaterial color="#d7c58a" transparent opacity={0.94} />
@@ -434,13 +444,13 @@ function ImpactScene() {
         </bufferGeometry>
         <lineBasicMaterial color="#f8efd9" transparent opacity={0.72} />
       </line>
-      <Text position={[landingX, 1.45, carryZ]} rotation-y={sceneTextRotationY} fontSize={1.55} color="#f8efd9">
+      <Text position={[landingX, 1.45, carryZ]} rotation-y={sceneTextRotationY} fontSize={1.55} color="#f8efd9" outlineWidth={0.055} outlineColor="#18231a">
         {dispersionWidthYd} yd window
       </Text>
-      <Text position={[0, 1.2, targetZ]} rotation-y={sceneTextRotationY} fontSize={1.55} color="#f8efd9">
+      <Text position={[0, 1.2, targetZ]} rotation-y={sceneTextRotationY} fontSize={1.55} color="#f8efd9" outlineWidth={0.055} outlineColor="#18231a">
         {inputs.holePar.replace('par', 'Par ')} · {inputs.targetDistanceYd} yd
       </Text>
-      <Text position={[result.offlineYd * visualLateralScale, 10, Math.min(85, result.carryYd * 0.55)]} rotation-y={sceneTextRotationY} fontSize={2.8} color="#f5f0e4">
+      <Text position={[result.offlineYd * visualLateralScale, Math.max(5, result.apexYd * ydToImpactScene + 1.5), carryZ * 0.48]} rotation-y={sceneTextRotationY} fontSize={1.65} color="#f5f0e4" outlineWidth={0.045} outlineColor="#18231a">
         {flightLabel}
       </Text>
       {impactView === 'top' ? null : <OrbitControls makeDefault enablePan={false} target={cameraView.target} maxPolarAngle={cameraView.maxPolar} />}
