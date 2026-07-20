@@ -307,8 +307,8 @@ input {
   top: 18px;
   z-index: 2;
   display: grid;
-  gap: 6px;
-  padding: 5px;
+  gap: 4px;
+  padding: 4px;
   border: 1px solid rgba(20, 24, 18, 0.22);
   border-radius: 8px;
   background: rgba(248, 239, 217, 0.82);
@@ -316,8 +316,8 @@ input {
 }
 
 .view-switcher button {
-  min-width: 62px;
-  min-height: 34px;
+  min-width: 54px;
+  min-height: 29px;
   border: 1px solid transparent;
   border-radius: 6px;
   background: transparent;
@@ -1526,8 +1526,8 @@ input[type="range"]::-webkit-slider-thumb {
   }
 
   .view-switcher button {
-    min-width: 52px;
-    min-height: 30px;
+    min-width: 46px;
+    min-height: 26px;
   }
 
   .feedback-dock {
