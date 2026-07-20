@@ -31,6 +31,7 @@
 body {
   margin: 0;
   min-width: 320px;
+  width: 100%;
   min-height: 100vh;
   height: 100vh;
   overflow: hidden;
@@ -44,6 +45,7 @@ input {
 .app {
   display: grid;
   grid-template-columns: 92px minmax(0, 1fr) 360px;
+  width: 100dvw;
   height: 100dvh;
   min-height: 0;
   overflow: hidden;
@@ -281,6 +283,7 @@ input {
   display: flex;
   flex-direction: column;
   gap: 14px;
+  min-width: 0;
   min-height: 0;
   height: 100dvh;
   padding: 20px;
@@ -289,6 +292,7 @@ input {
     linear-gradient(180deg, rgba(247, 240, 220, 0.97), rgba(226, 219, 197, 0.96));
   backdrop-filter: blur(12px);
   overflow-y: auto;
+  overflow-x: hidden;
   overscroll-behavior: contain;
   box-shadow: -18px 0 36px -34px var(--shadow);
 }
@@ -300,7 +304,7 @@ input {
 }
 
 .segmented {
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   padding: 4px;
   border: 1px solid var(--line);
   border-radius: 8px;
@@ -308,19 +312,19 @@ input {
 }
 
 .segmented.four-up {
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: repeat(4, minmax(0, 1fr));
 }
 
 .segmented.five-up {
-  grid-template-columns: repeat(5, 1fr);
+  grid-template-columns: repeat(5, minmax(0, 1fr));
 }
 
 .segmented.short-lies {
-  grid-template-columns: repeat(2, 1fr);
+  grid-template-columns: repeat(2, minmax(0, 1fr));
 }
 
 .segmented.short-grass {
-  grid-template-columns: repeat(2, 1fr);
+  grid-template-columns: repeat(2, minmax(0, 1fr));
 }
 
 .segmented button,
@@ -333,6 +337,8 @@ input {
   background: rgba(250, 243, 224, 0.93);
   color: var(--ink);
   cursor: pointer;
+  min-width: 0;
+  overflow-wrap: anywhere;
   box-shadow: 0 1px 0 rgba(255, 255, 255, 0.58) inset;
   transition: background 150ms ease, border-color 150ms ease, color 150ms ease, transform 150ms ease;
 }
