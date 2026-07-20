@@ -30,6 +30,7 @@ const ydToImpactScene = 0.15;
 const meterToYard = 1.0936133;
 const impactLateralEmphasis = 1.6;
 const impactVerticalEmphasis = 1.55;
+const impactCurveEmphasis = 2.15;
 const impactLateralYdScale = -ydToImpactScene * impactLateralEmphasis;
 const impactTrajectoryScale = ydToImpactScene * meterToYard;
 const impactTrajectoryVerticalScale = impactTrajectoryScale * impactVerticalEmphasis;
@@ -282,6 +283,17 @@ function impactCameraConfig(view: ImpactView, targetDistanceYd: number, carryYd:
   };
 }
 
+function emphasizeTrajectoryCurve(points: readonly (readonly [number, number, number])[]) {
+  if (points.length < 2) return points;
+  const first = points[0];
+  const next = points[1];
+  const startSlope = (next[0] - first[0]) / Math.max(0.0001, next[2] - first[2]);
+  return points.map(([x, y, z]) => {
+    const startLineX = first[0] + (z - first[2]) * startSlope;
+    return [startLineX + (x - startLineX) * impactCurveEmphasis, y, z] as [number, number, number];
+  });
+}
+
 function ImpactCameraRig({ view, targetDistanceYd, carryYd, apexYd }: { view: ImpactView; targetDistanceYd: number; carryYd: number; apexYd: number }) {
   const { camera } = useThree();
   const config = useMemo(() => impactCameraConfig(view, targetDistanceYd, carryYd, apexYd), [view, targetDistanceYd, carryYd, apexYd]);
@@ -353,10 +365,10 @@ function ImpactScene() {
   const flightLabel = activeFlightPreset(inputs)?.label ?? namedFlight(inputs);
   const sceneTextRotationY = impactView === 'top' ? 0 : Math.PI;
   const visualLateralScale = impactLateralYdScale;
-  const sampled = result.points.filter((_, index) => index % 20 === 0).map((point) => point.position);
+  const sampled = emphasizeTrajectoryCurve(result.points.filter((_, index) => index % 20 === 0).map((point) => point.position));
   const targetZ = inputs.targetDistanceYd * ydToImpactScene;
   const carryZ = result.carryYd * ydToImpactScene;
-  const landingX = result.offlineYd * visualLateralScale;
+  const landingX = (sampled.at(-1)?.[0] ?? result.offlineYd / meterToYard) * impactTrajectoryLateralScale;
   const dispersionWidthYd = Math.round(Math.max(16, result.carryYd * (inputs.club === 'Driver' ? 0.12 : inputs.club === '6-iron' ? 0.09 : 0.07)));
   const dispersionHalfX = (dispersionWidthYd / 2) * Math.abs(impactLateralYdScale);
   const dispersionDepth = Math.max(9, result.carryYd * 0.045) * ydToImpactScene;
@@ -467,7 +479,7 @@ function ImpactScene() {
         <meshStandardMaterial color="#2a3128" transparent opacity={0.42} roughness={0.82} />
       </mesh>
       {ghosts.map((ghost, index) => (
-        <Trajectory key={ghost.id} points={ghost.points} color="#ece4d3" opacity={0.26 - index * 0.025} scale={impactTrajectoryScale} verticalScale={impactTrajectoryVerticalScale} lateralScale={impactTrajectoryLateralScale} width={2.6} />
+        <Trajectory key={ghost.id} points={emphasizeTrajectoryCurve(ghost.points)} color="#ece4d3" opacity={0.26 - index * 0.025} scale={impactTrajectoryScale} verticalScale={impactTrajectoryVerticalScale} lateralScale={impactTrajectoryLateralScale} width={2.6} />
       ))}
       <Trajectory points={sampled} color="#e86f23" opacity={0.98} scale={impactTrajectoryScale} verticalScale={impactTrajectoryVerticalScale} lateralScale={impactTrajectoryLateralScale} width={5.2} />
       <mesh position={[landingX, 0.12, carryZ]} rotation-x={-Math.PI / 2} scale={[dispersionHalfX, dispersionDepth, 1]}>
