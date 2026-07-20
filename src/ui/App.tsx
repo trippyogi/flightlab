@@ -686,6 +686,17 @@ function GreenScene() {
   const rolloutPoints = useMemo(() => sampledPath(result.rolloutPoints, 8).map((point) => [point.position[0] * greenScale, 0.135, point.position[1] * greenScale] as [number, number, number]), [result.rolloutPoints]);
   const leavePoint = useMemo(() => [result.leave.position[0] * greenScale, 0.16, result.leave.position[1] * greenScale] as [number, number, number], [result.leave.position]);
   const secondPuttPoints = useMemo(() => sampledPath(result.secondPuttPoints, 8).map((point) => [point.position[0] * greenScale, 0.16, point.position[1] * greenScale] as [number, number, number]), [result.secondPuttPoints]);
+  const secondPuttAimLine = useMemo(() => {
+    const velocity = result.secondPuttPoints[0]?.velocity;
+    if (!velocity) return null;
+    const speed = Math.hypot(velocity[0], velocity[1]);
+    if (speed < 0.001) return null;
+    const distance = result.leave.distanceFt * ftToScene;
+    return new Float32Array([
+      leavePoint[0], 0.145, leavePoint[2],
+      leavePoint[0] + (velocity[0] / speed) * distance, 0.145, leavePoint[2] + (velocity[1] / speed) * distance,
+    ]);
+  }, [leavePoint, result.leave.distanceFt, result.secondPuttPoints]);
   const cameraPoints = useMemo(() => [...points, ...rolloutPoints, ...secondPuttPoints], [points, rolloutPoints, secondPuttPoints]);
   const cameraTarget = useMemo(() => {
     const bounds = pathBounds(cameraPoints);
@@ -736,6 +747,14 @@ function GreenScene() {
       </mesh>
       <Trajectory points={points} color="#e86f23" opacity={0.98} scale={1} width={5} />
       {result.made && rolloutPoints.length > 1 ? <Trajectory points={rolloutPoints} color="#f8efd9" opacity={0.78} scale={1} width={3.6} dashed /> : null}
+      {secondPuttAimLine ? (
+        <line>
+          <bufferGeometry>
+            <bufferAttribute attach="attributes-position" args={[secondPuttAimLine, 3]} />
+          </bufferGeometry>
+          <lineBasicMaterial color="#f5f0e4" transparent opacity={0.42} />
+        </line>
+      ) : null}
       {secondPuttPoints.length > 1 ? <Trajectory points={secondPuttPoints} color="#f6e6ad" opacity={0.96} scale={1} width={4.2} dashed /> : null}
       {secondPuttPoints.length > 1 ? (
         <mesh position={leavePoint}>
