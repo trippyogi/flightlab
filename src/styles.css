@@ -1405,10 +1405,13 @@ input[type="range"] {
 
 input[type="range"] {
   height: 6px;
-  border: 1px solid #77796d;
+  padding: 6px 0;
+  border: 0;
   border-radius: 1px;
   background: linear-gradient(90deg, var(--amber) 0 var(--fill, 50%), #353a35 var(--fill, 50%) 100%);
-  box-shadow: inset 1px 1px rgba(0, 0, 0, 0.32), 1px 1px rgba(255, 255, 255, 0.45);
+  background-clip: content-box;
+  box-shadow: none;
+  cursor: pointer;
 }
 
 input[type="range"]::-webkit-slider-thumb {
