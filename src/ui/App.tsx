@@ -19,6 +19,7 @@ import {
 } from '../sim/shortGame';
 import { modules } from '../modules/registry';
 import { useLabStore, type ImpactView } from '../store/labStore';
+import { LearningWorkspace } from './TrainingWorkspace';
 
 const nf = new Intl.NumberFormat('en-US', { maximumFractionDigits: 1 });
 const greenScale = 5;
@@ -1466,6 +1467,7 @@ function CourseHud() {
 export function App() {
   const activeModule = useLabStore((state) => state.activeModule);
   const impactView = useLabStore((state) => state.impactView);
+  const [workspace, setWorkspace] = useState<'setup' | 'train' | 'analyze'>('setup');
   const activeManifest = modules.find((module) => module.id === activeModule);
   const camera = activeModule === 'green'
     ? { position: [0, 13, -15] as [number, number, number], fov: 48 }
@@ -1489,7 +1491,14 @@ export function App() {
         <CourseHud />
         <ResultHud />
       </section>
-      {activeModule === 'impact' ? <ImpactPanel /> : activeModule === 'green' ? <GreenPanel /> : activeModule === 'short' ? <ShortPanel /> : <PlaceholderPanel />}
+      <section className="workspace-shell">
+        <nav className="workspace-tabs" aria-label="lab workspace">
+          {(['setup', 'train', 'analyze'] as const).map((tab) => <button type="button" key={tab} className={clsx(workspace === tab && 'active')} aria-pressed={workspace === tab} onClick={() => setWorkspace(tab)}>{tab}</button>)}
+        </nav>
+        {workspace === 'setup'
+          ? activeModule === 'impact' ? <ImpactPanel /> : activeModule === 'green' ? <GreenPanel /> : activeModule === 'short' ? <ShortPanel /> : <PlaceholderPanel />
+          : <LearningWorkspace mode={workspace} />}
+      </section>
       <CaddieDock />
     </main>
   );
