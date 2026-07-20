@@ -271,8 +271,8 @@ function impactCameraConfig(view: ImpactView, targetDistanceYd: number, carryYd:
     };
   }
   return {
-    position: [0, 3.2, -24] as [number, number, number],
-    target: [0, 2.6, Math.min(72, shotDepth * 0.72)] as [number, number, number],
+    position: [0, 2.35, -11] as [number, number, number],
+    target: [0, 2.45, Math.min(64, shotDepth * 0.68)] as [number, number, number],
     up: [0, 1, 0] as [number, number, number],
     fov: impactCameraFov.player,
     maxPolar: Math.PI / 2.02,
@@ -379,8 +379,8 @@ function ImpactScene() {
       <ImpactCameraRig view={impactView} targetDistanceYd={inputs.targetDistanceYd} carryYd={result.carryYd} apexYd={result.apexYd} />
       <ambientLight intensity={0.8} />
       <directionalLight position={[4, 8, 5]} intensity={1.6} />
-      <mesh rotation-x={-Math.PI / 2} position={[0, -0.04, roughLength * 0.5 - 8]}>
-        <planeGeometry args={[96, roughLength]} />
+      <mesh rotation-x={-Math.PI / 2} position={[0, -0.04, roughLength * 0.5 - 25]}>
+        <planeGeometry args={[96, roughLength + 34]} />
         <meshStandardMaterial color="#3f633d" roughness={0.94} />
       </mesh>
       <mesh rotation-x={-Math.PI / 2} position={[0, -0.02, fairwayLength * 0.5]}>
@@ -1471,7 +1471,7 @@ export function App() {
     ? { position: [0, 13, -15] as [number, number, number], fov: 48 }
     : activeModule === 'short'
       ? { position: [0, 5.4, -8.5] as [number, number, number], fov: 47 }
-    : { position: [0, 3.2, -24] as [number, number, number], fov: impactCameraFov[impactView] };
+    : { position: [0, 2.35, -11] as [number, number, number], fov: impactCameraFov[impactView] };
   return (
     <main className="app">
       <ModuleRail />
