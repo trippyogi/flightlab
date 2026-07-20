@@ -43,7 +43,10 @@ const ftToM = 0.3048;
 const ballRadiusM = 0.021335;
 const cupRadiusM = 0.054;
 const secondPuttPacePastFt = 1.5;
-const secondPuttReadGravityMultiplier = 1.45;
+// Real greens add imperfections and skid/roll transition that the constant-deceleration
+// model does not capture. Calibrate the return-line read without changing the primary
+// putt receipt model so steep, fast leaves do not visually under-read.
+const secondPuttReadGravityMultiplier = 2.15;
 
 function frictionFromStimp(stimp: number) {
   const releaseMs = 1.83;
@@ -156,7 +159,11 @@ function makeLineSecondPutt({
         const rolloutEnd = candidate.rolloutPoints.at(-1)?.position;
         const pastDistance = rolloutEnd ? Math.hypot(rolloutEnd[0] - target[0], rolloutEnd[1] - target[1]) : Number.POSITIVE_INFINITY;
         const paceMiss = Math.abs(pastDistance - secondPuttPacePastFt * ftToM);
-        const score = candidate.made ? candidate.closest * 0.85 + paceMiss * 0.75 : 100 + candidate.closest;
+        // A make line must pass through the center of the cup. Only use pace to rank
+        // otherwise credible center-cup paths; edge capture must not win because it
+        // happens to finish nearer the requested rollout distance.
+        const centerPenalty = candidate.closest * 24;
+        const score = candidate.made ? centerPenalty + paceMiss * 0.45 : 100 + centerPenalty;
         if (score < bestScore) {
           bestPoints = candidate.points;
           bestScore = score;

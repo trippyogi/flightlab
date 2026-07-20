@@ -8,7 +8,7 @@ describe('simulateGreen', () => {
       greenInternalsForTest.captureRadius(1.2),
     );
     expect(greenInternalsForTest.secondPuttPacePastFt).toBe(1.5);
-    expect(greenInternalsForTest.secondPuttReadGravityMultiplier).toBeGreaterThan(1);
+    expect(greenInternalsForTest.secondPuttReadGravityMultiplier).toBeCloseTo(2.15);
   });
 
   it('rolls a straight putt near the cup on a flat green', () => {
@@ -146,7 +146,7 @@ describe('simulateGreen', () => {
     const lateralReadFt = Math.max(...xs) - Math.min(...xs);
     const end = result.secondPuttPoints.at(-1)!.position;
 
-    expect(lateralReadFt).toBeGreaterThan(1);
+    expect(lateralReadFt).toBeGreaterThan(1.45);
     expect(end[0]).toBeCloseTo(0, 6);
     expect(end[1]).toBeCloseTo(0, 6);
   });
