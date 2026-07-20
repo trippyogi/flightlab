@@ -43,6 +43,7 @@ const ftToM = 0.3048;
 const ballRadiusM = 0.021335;
 const cupRadiusM = 0.054;
 const secondPuttPacePastFt = 1.5;
+const secondPuttReadGravityMultiplier = 1.45;
 
 function frictionFromStimp(stimp: number) {
   const releaseMs = 1.83;
@@ -124,41 +125,50 @@ function makeLineSecondPutt({
   if (distance < 0.12) return [] as RollPoint[];
 
   const directAngle = Math.atan2(toCup[1], toCup[0]);
+  const readGravity: Vec2 = [gravity[0] * secondPuttReadGravityMultiplier, gravity[1] * secondPuttReadGravityMultiplier];
   let bestPoints: RollPoint[] = [];
   let bestScore = Number.POSITIVE_INFINITY;
   let bestAngle = directAngle;
+  let bestSpeedMultiplier = 1;
 
-  const evaluate = (center: number, span: number, steps: number) => {
-    for (let index = 0; index <= steps; index += 1) {
-      const t = index / steps - 0.5;
-      const angle = center + t * span;
+  const evaluate = (center: number, angleSpan: number, angleSteps: number, speedCenter: number, speedSpan: number, speedSteps: number) => {
+    for (let index = 0; index <= angleSteps; index += 1) {
+      const t = index / angleSteps - 0.5;
+      const angle = center + t * angleSpan;
       const unit: Vec2 = [Math.cos(angle), Math.sin(angle)];
-      const gravityAlongStart = gravity[0] * unit[0] + gravity[1] * unit[1];
-      const speed = Math.sqrt(Math.max(
+      const gravityAlongStart = readGravity[0] * unit[0] + readGravity[1] * unit[1];
+      const baseSpeed = Math.sqrt(Math.max(
         0.1,
         2 * friction * (distance + secondPuttPacePastFt * ftToM) - 2 * gravityAlongStart * distance,
       ));
-      const candidate = rollPutt({
-        start,
-        target,
-        initialVelocity: [unit[0] * speed, unit[1] * speed],
-        gravity,
-        friction,
-        continueAfterCapture: false,
-      });
-      const last = candidate.points.at(-1)?.position ?? start;
-      const finishMiss = Math.hypot(last[0] - target[0], last[1] - target[1]);
-      const score = candidate.closest + finishMiss * 0.18 + (candidate.made ? -0.2 : 0);
-      if (score < bestScore) {
-        bestPoints = candidate.points;
-        bestScore = score;
-        bestAngle = angle;
+      for (let speedIndex = 0; speedIndex <= speedSteps; speedIndex += 1) {
+        const speedT = speedIndex / speedSteps - 0.5;
+        const speedMultiplier = speedCenter + speedT * speedSpan;
+        const speed = baseSpeed * speedMultiplier;
+        const candidate = rollPutt({
+          start,
+          target,
+          initialVelocity: [unit[0] * speed, unit[1] * speed],
+          gravity: readGravity,
+          friction,
+          continueAfterCapture: true,
+        });
+        const rolloutEnd = candidate.rolloutPoints.at(-1)?.position;
+        const pastDistance = rolloutEnd ? Math.hypot(rolloutEnd[0] - target[0], rolloutEnd[1] - target[1]) : Number.POSITIVE_INFINITY;
+        const paceMiss = Math.abs(pastDistance - secondPuttPacePastFt * ftToM);
+        const score = candidate.made ? candidate.closest * 0.85 + paceMiss * 0.75 : 100 + candidate.closest;
+        if (score < bestScore) {
+          bestPoints = candidate.points;
+          bestScore = score;
+          bestAngle = angle;
+          bestSpeedMultiplier = speedMultiplier;
+        }
       }
     }
   };
 
-  evaluate(directAngle, degToRad(220), 140);
-  evaluate(bestAngle, degToRad(18), 90);
+  evaluate(directAngle, degToRad(220), 72, 1, 0.8, 12);
+  evaluate(bestAngle, degToRad(22), 48, bestSpeedMultiplier, 0.24, 12);
   const last = bestPoints.at(-1);
   if (last && Math.hypot(last.position[0] - target[0], last.position[1] - target[1]) > 0.001) {
     return [...bestPoints, { t: last.t + 0.001, position: target, velocity: [0, 0] as Vec2 }];
@@ -228,4 +238,4 @@ export function simulateGreen(inputs: GreenInputs): GreenResult {
   };
 }
 
-export const greenInternalsForTest = { frictionFromStimp, captureRadius, secondPuttPacePastFt };
+export const greenInternalsForTest = { frictionFromStimp, captureRadius, secondPuttPacePastFt, secondPuttReadGravityMultiplier };
