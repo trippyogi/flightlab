@@ -1,6 +1,6 @@
 import { Canvas, useFrame, useThree } from '@react-three/fiber';
 import { Line, OrbitControls, Text } from '@react-three/drei';
-import { Activity, CircleDot, FlaskConical, Gauge, MessageSquare, Target } from 'lucide-react';
+import { Activity, CircleDot, FlaskConical, Gauge, MessageSquare, Target, X } from 'lucide-react';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { MathUtils, PerspectiveCamera, Vector3 } from 'three';
 import { clsx } from 'clsx';
@@ -1368,8 +1368,8 @@ function CaddieDock() {
 
   return (
     <div className={clsx('caddie-dock', open && 'open')}>
-      <button type="button" className="caddie-toggle" onClick={() => setOpen(!open)} aria-expanded={open}>
-        <MessageSquare size={18} />
+      <button type="button" className="caddie-toggle" onClick={() => setOpen(!open)} aria-expanded={open} aria-label={open ? 'Close virtual caddie' : 'Open virtual caddie'}>
+        {open ? <X size={18} /> : <MessageSquare size={18} />}
         <span>Virtual Caddie</span>
       </button>
       {open ? (
