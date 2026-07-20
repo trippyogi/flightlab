@@ -203,7 +203,7 @@ function initialAimRead(points: RollPoint[]) {
   return Math.abs(toCup[0] * launchUnit[1] - toCup[1] * launchUnit[0]);
 }
 
-export function simulateGreen(inputs: GreenInputs): GreenResult {
+export function simulateGreen(inputs: GreenInputs, includeSecondPutt = true): GreenResult {
   const target: Vec2 = [0, 0];
   const start: Vec2 = [0, -inputs.distanceFt * ftToM];
   const friction = frictionFromStimp(inputs.stimp);
@@ -233,12 +233,12 @@ export function simulateGreen(inputs: GreenInputs): GreenResult {
   const slopeRead = Math.abs(fallComponent) < 0.05 ? 'sidehill' : fallComponent > 0 ? 'downhill' : 'uphill';
   const sideRead = Math.abs(rolloutLast.position[0]) < 0.05 ? 'center' : rolloutLast.position[0] > 0 ? 'high side' : 'low side';
   const heightRead = slopeRead === 'downhill' ? 'above hole' : slopeRead === 'uphill' ? 'below hole' : 'level';
-  const secondPuttPoints = makeLineSecondPutt({
+  const secondPuttPoints = includeSecondPutt ? makeLineSecondPutt({
     start: rolloutLast.position,
     target,
     gravity,
     friction,
-  });
+  }) : [];
   const secondPuttReadFt = initialAimRead(secondPuttPoints) / ftToM;
   return {
     points,

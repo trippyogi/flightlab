@@ -174,4 +174,20 @@ describe('simulateGreen', () => {
     expect(end.position[0]).toBeCloseTo(0, 6);
     expect(end.position[1]).toBeCloseTo(0, 6);
   });
+
+  it('can return the first-putt result without running the return-line solver', () => {
+    const result = simulateGreen({
+      distanceFt: 18,
+      slopePercent: 5,
+      slopeDirectionDeg: 90,
+      stimp: 12,
+      aimDeg: 0,
+      pacePastFt: 1.5,
+    }, false);
+
+    expect(result.points.length).toBeGreaterThan(2);
+    expect(result.leave.distanceFt).toBeGreaterThan(0);
+    expect(result.secondPuttPoints).toEqual([]);
+    expect(result.secondPuttReadFt).toBe(0);
+  });
 });

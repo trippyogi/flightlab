@@ -694,15 +694,41 @@ function FlightPathIcon({ height, curve }: Pick<FlightPreset, 'height' | 'curve'
   );
 }
 
+function AnimatedSecondPutt({ points }: { points: readonly (readonly [number, number, number])[] }) {
+  const [visibleCount, setVisibleCount] = useState(2);
+  useEffect(() => {
+    const step = Math.max(1, Math.ceil(points.length / 22));
+    const timer = window.setInterval(() => {
+      setVisibleCount((count) => {
+        if (count >= points.length) {
+          window.clearInterval(timer);
+          return count;
+        }
+        return Math.min(points.length, count + step);
+      });
+    }, 22);
+    return () => window.clearInterval(timer);
+  }, [points]);
+  return <Trajectory points={points.slice(0, visibleCount)} color="#f6e6ad" opacity={0.96} scale={1} width={4.2} dashed />;
+}
+
 function GreenScene() {
   const inputs = useLabStore((state) => state.greenInputs);
-  const result = useMemo(() => simulateGreen(inputs), [inputs]);
+  const result = useMemo(() => simulateGreen(inputs, false), [inputs]);
+  const [secondPuttResult, setSecondPuttResult] = useState<{ inputs: typeof inputs; result: ReturnType<typeof simulateGreen> } | null>(null);
+  useEffect(() => {
+    const timer = window.setTimeout(() => {
+      setSecondPuttResult({ inputs, result: simulateGreen(inputs) });
+    }, 180);
+    return () => window.clearTimeout(timer);
+  }, [inputs]);
+  const settledSecondPutt = secondPuttResult?.inputs === inputs ? secondPuttResult.result : null;
   const points = useMemo(() => sampledPath(result.points, 8).map((point) => [point.position[0] * greenScale, 0.13, point.position[1] * greenScale] as [number, number, number]), [result.points]);
   const rolloutPoints = useMemo(() => sampledPath(result.rolloutPoints, 8).map((point) => [point.position[0] * greenScale, 0.135, point.position[1] * greenScale] as [number, number, number]), [result.rolloutPoints]);
   const leavePoint = useMemo(() => [result.leave.position[0] * greenScale, 0.16, result.leave.position[1] * greenScale] as [number, number, number], [result.leave.position]);
-  const secondPuttPoints = useMemo(() => sampledPath(result.secondPuttPoints, 8).map((point) => [point.position[0] * greenScale, 0.16, point.position[1] * greenScale] as [number, number, number]), [result.secondPuttPoints]);
+  const secondPuttPoints = useMemo(() => sampledPath(settledSecondPutt?.secondPuttPoints ?? [], 8).map((point) => [point.position[0] * greenScale, 0.16, point.position[1] * greenScale] as [number, number, number]), [settledSecondPutt]);
   const secondPuttAimLine = useMemo(() => {
-    const velocity = result.secondPuttPoints[0]?.velocity;
+    const velocity = settledSecondPutt?.secondPuttPoints[0]?.velocity;
     if (!velocity) return null;
     const speed = Math.hypot(velocity[0], velocity[1]);
     if (speed < 0.001) return null;
@@ -711,7 +737,7 @@ function GreenScene() {
       leavePoint[0], 0.145, leavePoint[2],
       leavePoint[0] + (velocity[0] / speed) * distance, 0.145, leavePoint[2] + (velocity[1] / speed) * distance,
     ]);
-  }, [leavePoint, result.leave.distanceFt, result.secondPuttPoints]);
+  }, [leavePoint, result.leave.distanceFt, settledSecondPutt]);
   const cameraPoints = useMemo(() => [...points, ...rolloutPoints, ...secondPuttPoints], [points, rolloutPoints, secondPuttPoints]);
   const cameraTarget = useMemo(() => {
     const bounds = pathBounds(cameraPoints);
@@ -770,7 +796,7 @@ function GreenScene() {
           <lineBasicMaterial color="#f5f0e4" transparent opacity={0.42} />
         </line>
       ) : null}
-      {secondPuttPoints.length > 1 ? <Trajectory points={secondPuttPoints} color="#f6e6ad" opacity={0.96} scale={1} width={4.2} dashed /> : null}
+      {secondPuttPoints.length > 1 ? <AnimatedSecondPutt key={`${leavePoint[0]}:${leavePoint[2]}:${secondPuttPoints.length}`} points={secondPuttPoints} /> : null}
       {secondPuttPoints.length > 1 ? (
         <mesh position={leavePoint}>
           <sphereGeometry args={[0.16, 24, 12]} />
@@ -795,7 +821,7 @@ function GreenScene() {
 function GreenPanel() {
   const inputs = useLabStore((state) => state.greenInputs);
   const setGreenInput = useLabStore((state) => state.setGreenInput);
-  const result = useMemo(() => simulateGreen(inputs), [inputs]);
+  const result = useMemo(() => simulateGreen(inputs, false), [inputs]);
   const manifest = modules.find((module) => module.id === 'green')!;
   const breakSide = result.breakFt < -0.05 ? 'right' : result.breakFt > 0.05 ? 'left' : 'center';
   return (
@@ -831,8 +857,8 @@ function GreenPanel() {
       </section>
       <section className="leave-card" aria-label="second putt leave">
         <span>Second putt</span>
-        <strong>{nf.format(result.leave.distanceFt)} ft · {result.leave.slopeRead} · {nf.format(result.secondPuttReadFt)} ft read</strong>
-        <p>{result.leave.heightRead}, {result.leave.sideRead}. Dashed line is the make line at {nf.format(result.secondPuttPacePastFt)} ft past speed and stops at the cup.</p>
+        <strong>{nf.format(result.leave.distanceFt)} ft · {result.leave.slopeRead}</strong>
+        <p>{result.leave.heightRead}, {result.leave.sideRead}. The {nf.format(result.secondPuttPacePastFt)} ft-past make line draws after the controls settle.</p>
       </section>
       <div className="readouts" aria-live="polite">
         <Readout label="Lip speed" value={`${nf.format(result.lipSpeedMs)} m/s`} receipt={result.receipts.capture} />
@@ -1270,7 +1296,7 @@ function ResultHud() {
   const greenInputs = useLabStore((state) => state.greenInputs);
   const shortInputs = useLabStore((state) => state.shortInputs);
   const impact = useMemo(() => simulateImpact(impactInputs), [impactInputs]);
-  const green = useMemo(() => simulateGreen(greenInputs), [greenInputs]);
+  const green = useMemo(() => simulateGreen(greenInputs, false), [greenInputs]);
   const short = useMemo(() => simulateShortGame(shortInputs), [shortInputs]);
 
   if (activeModule === 'impact') {
