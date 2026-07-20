@@ -75,6 +75,21 @@ const greenScenarioLabels: Record<GreenScenario, string> = {
   crowned: 'Crowned',
   backstop: 'Backstop',
 };
+const greenPresets = [
+  { label: 'Straight 8', detail: 'level · medium', values: { distanceFt: 8, slopePercent: 0, slopeDirectionDeg: 0, stimp: 10, aimDeg: 0, pacePastFt: 1.5 } },
+  { label: 'Left edge', detail: '2% · quick', values: { distanceFt: 12, slopePercent: 2, slopeDirectionDeg: 90, stimp: 11, aimDeg: -2.75, pacePastFt: 1.5 } },
+  { label: 'Big swinger', detail: '4% · 20 ft', values: { distanceFt: 20, slopePercent: 4, slopeDirectionDeg: 270, stimp: 10.5, aimDeg: 9.5, pacePastFt: 1.8 } },
+  { label: 'Lag putt', detail: '35 ft · fast', values: { distanceFt: 35, slopePercent: 2.5, slopeDirectionDeg: 135, stimp: 12, aimDeg: -3.5, pacePastFt: 1 } },
+] as const;
+const hundredFootHoles = [
+  { name: 'North shelf', slopePercent: 1.5, slopeDirectionDeg: 20, stimp: 10 },
+  { name: 'Sidehill', slopePercent: 2.5, slopeDirectionDeg: 90, stimp: 10.5 },
+  { name: 'Back tier', slopePercent: 3, slopeDirectionDeg: 180, stimp: 11 },
+  { name: 'Low corner', slopePercent: 2, slopeDirectionDeg: 265, stimp: 9.5 },
+  { name: 'Tour pin', slopePercent: 3.5, slopeDirectionDeg: 315, stimp: 11.5 },
+] as const;
+const hundredFootDistances = [5, 10, 15, 20] as const;
+const hundredFootPutts = hundredFootHoles.flatMap((hole, holeIndex) => hundredFootDistances.map((distanceFt) => ({ ...hole, holeIndex, distanceFt })));
 const categoryDefaults: Record<ShotCategory, { shot: ShotType; carryYd: number; wedge: WedgeType; swing: SwingClock }> = {
   chip: { shot: 'chip', carryYd: 9, wedge: 'Gap', swing: '7:30' },
   pitch: { shot: 'pitch', carryYd: 28, wedge: 'Sand', swing: '9:00' },
@@ -747,7 +762,6 @@ function GreenScene() {
   return (
     <>
       <color attach="background" args={['#c8d8bd']} />
-      <fog attach="fog" args={['#c8d8bd', 22, 58]} />
       <GreenCameraRig points={cameraPoints} />
       <ambientLight intensity={0.9} />
       <directionalLight position={[-3, 6, 4]} intensity={1.4} />
@@ -824,15 +838,101 @@ function GreenPanel() {
   const result = useMemo(() => simulateGreen(inputs, false), [inputs]);
   const manifest = modules.find((module) => module.id === 'green')!;
   const breakSide = result.breakFt < -0.05 ? 'right' : result.breakFt > 0.05 ? 'left' : 'center';
+  const [drillActive, setDrillActive] = useState(false);
+  const [drillIndex, setDrillIndex] = useState(0);
+  const [feetMade, setFeetMade] = useState(0);
+  const [madePutts, setMadePutts] = useState(0);
+  const [drillComplete, setDrillComplete] = useState(false);
+  const applyPreset = (values: (typeof greenPresets)[number]['values']) => {
+    (Object.entries(values) as [keyof typeof values, number][]).forEach(([key, value]) => setGreenInput(key, value));
+  };
+  const loadDrillPutt = (index: number) => {
+    const putt = hundredFootPutts[index];
+    setGreenInput('distanceFt', putt.distanceFt);
+    setGreenInput('slopePercent', putt.slopePercent);
+    setGreenInput('slopeDirectionDeg', putt.slopeDirectionDeg);
+    setGreenInput('stimp', putt.stimp);
+    setGreenInput('aimDeg', 0);
+    setGreenInput('pacePastFt', 1.5);
+  };
+  const startDrill = () => {
+    setDrillActive(true);
+    setDrillComplete(false);
+    setDrillIndex(0);
+    setFeetMade(0);
+    setMadePutts(0);
+    loadDrillPutt(0);
+  };
+  const recordDrillPutt = (made: boolean) => {
+    const current = hundredFootPutts[drillIndex];
+    if (made) {
+      setFeetMade((score) => score + current.distanceFt);
+      setMadePutts((score) => score + 1);
+    }
+    const nextIndex = drillIndex + 1;
+    if (nextIndex >= hundredFootPutts.length) {
+      setDrillActive(false);
+      setDrillComplete(true);
+      return;
+    }
+    setDrillIndex(nextIndex);
+    loadDrillPutt(nextIndex);
+  };
+  const currentDrillPutt = hundredFootPutts[drillIndex];
+  const projectedScore = feetMade + (drillActive && result.made ? currentDrillPutt.distanceFt : 0);
   return (
     <aside className="panel">
+      <section className={clsx('drill-card', drillActive && 'active', drillComplete && 'complete')} aria-label="100 feet putting drill">
+        <div className="drill-title">
+          <div><span>Featured drill</span><strong>100 FT</strong></div>
+          <p><b>{feetMade}</b><small>feet made</small></p>
+        </div>
+        {!drillActive && !drillComplete ? (
+          <>
+            <p className="drill-copy">5 holes · putts from 5 / 10 / 15 / 20 ft · 20 total. Make more than 100 feet to match a Tour winner.</p>
+            <button type="button" className="drill-start" onClick={startDrill}>Start challenge →</button>
+          </>
+        ) : drillActive ? (
+          <>
+            <div className="drill-progress"><i style={{ width: `${((drillIndex + 1) / hundredFootPutts.length) * 100}%` }} /></div>
+            <div className="drill-current">
+              <span>Hole {currentDrillPutt.holeIndex + 1}/5 · Putt {drillIndex + 1}/20</span>
+              <strong>{currentDrillPutt.distanceFt} FT · {currentDrillPutt.name}</strong>
+              <small>{currentDrillPutt.slopePercent}% · {compassLabel(currentDrillPutt.slopeDirectionDeg)} fall · {currentDrillPutt.stimp} stimp</small>
+            </div>
+            <div className="drill-actions">
+              <button type="button" onClick={() => recordDrillPutt(false)}>Miss</button>
+              <button type="button" className="made" onClick={() => recordDrillPutt(true)}>Made +{currentDrillPutt.distanceFt}</button>
+            </div>
+            <small className="drill-sim-read">Lab read: {result.made ? 'center cup' : 'outside capture'} · projected {projectedScore} ft</small>
+          </>
+        ) : (
+          <>
+            <div className="drill-verdict">
+              <strong>{feetMade > 100 ? 'TOUR WINNER' : feetMade === 100 ? 'TOUR LINE' : 'RUN IT BACK'}</strong>
+              <span>{madePutts}/20 made · {feetMade}/250 ft</span>
+              <p>{feetMade > 100 ? 'You cleared the 100-foot standard.' : `${101 - feetMade} more feet clears the standard.`}</p>
+            </div>
+            <button type="button" className="drill-start" onClick={startDrill}>Play again ↻</button>
+          </>
+        )}
+      </section>
+      <section className="preset-card" aria-label="putting presets">
+        <div className="preset-head"><span>Practice select</span><b>4 reads</b></div>
+        <div className="preset-grid">
+          {greenPresets.map((preset, index) => (
+            <button type="button" key={preset.label} onClick={() => applyPreset(preset.values)}>
+              <i>{String(index + 1).padStart(2, '0')}</i><strong>{preset.label}</strong><small>{preset.detail}</small>
+            </button>
+          ))}
+        </div>
+      </section>
       <Slider label="Distance" value={inputs.distanceFt} min={4} max={40} step={1} unit=" ft" onChange={(v) => setGreenInput('distanceFt', v)} />
       <Slider label="Slope" value={inputs.slopePercent} min={0} max={6} step={0.25} unit="%" onChange={(v) => setGreenInput('slopePercent', v)} />
       <Slider label="Fall line" value={inputs.slopeDirectionDeg} min={0} max={360} step={5} unit=" deg" onChange={(v) => setGreenInput('slopeDirectionDeg', v)} />
       <Slider label="Stimp" value={inputs.stimp} min={6} max={14} step={0.5} onChange={(v) => setGreenInput('stimp', v)} />
       <Slider label="Aim" value={inputs.aimDeg} min={-20} max={20} step={0.25} unit=" deg" onChange={(v) => setGreenInput('aimDeg', v)} />
       <Slider label="Pace" value={inputs.pacePastFt} min={-6} max={6} step={0.1} unit=" ft" onChange={(v) => setGreenInput('pacePastFt', v)} />
-      <div className={clsx('result-chip', result.made && 'made')}>{result.made ? 'Captured' : 'Missed'}</div>
       <section className="green-map-card" aria-label="green reading map legend">
         <div className="map-scale" aria-hidden="true">
           <span />
@@ -955,6 +1055,16 @@ function ShortScene() {
         <circleGeometry args={[1.15, 48]} />
         <meshStandardMaterial color={lieColor[inputs.lie]} roughness={0.96} />
       </mesh>
+      <mesh rotation-x={-Math.PI / 2} position={[0, 0.064, landingZ]}>
+        <circleGeometry args={[Math.max(0.45, result.landingWindowYd * ydToShortScene * 0.46), 56]} />
+        <meshBasicMaterial color="#e86f23" transparent opacity={0.1} depthWrite={false} />
+      </mesh>
+      {[0.55, 0.78, 1].map((scale, index) => (
+        <mesh key={scale} rotation-x={-Math.PI / 2} position={[0, 0.067 + index * 0.003, landingZ]} scale={[1.7, 0.68, 1]}>
+          <ringGeometry args={[scale - 0.018, scale, 64]} />
+          <meshBasicMaterial color={index === 2 ? '#f8efd9' : '#e86f23'} transparent opacity={0.28 + index * 0.08} />
+        </mesh>
+      ))}
       {inputs.lie === 'bunker' || inputs.lie === 'plugged-bunker' ? (
         <mesh rotation-x={-Math.PI / 2} position={[0, 0.03, -0.2]}>
           <ringGeometry args={[0.74, 1.15, 64]} />
@@ -988,6 +1098,7 @@ function ShortScene() {
         <meshStandardMaterial color="#f8f2e4" roughness={0.42} />
       </mesh>
       <Trajectory points={flightPoints} color="#e86f23" opacity={0.98} scale={ydToShortScene} width={3.8} />
+      <Trajectory points={flightPoints} color="#ffd57a" opacity={0.2} scale={ydToShortScene} width={8.5} />
       <Trajectory points={result.rollPoints} color="#f8efd9" opacity={0.82} scale={ydToShortScene} width={3.2} dashed />
       {result.missWindows.filter((miss) => miss.label !== 'clean').map((miss, index) => (
         <Trajectory
@@ -1020,6 +1131,17 @@ function ShortScene() {
         <ringGeometry args={[0.22, 0.31, 48]} />
         <meshBasicMaterial color="#f8efd9" transparent opacity={0.72} />
       </mesh>
+      {[10, 20, 30, 40, 50, 60, 70].filter((yardage) => yardage < result.totalYd + 12).map((yardage, index) => (
+        <group key={yardage} position={[-4.65, 0.12, yardage * ydToShortScene]}>
+          <mesh position={[0, 0.34, 0]}>
+            <boxGeometry args={[0.76, 0.5, 0.08]} />
+            <meshStandardMaterial color={index % 2 === 0 ? '#f8efd9' : '#263f2a'} roughness={0.74} />
+          </mesh>
+          <Text position={[0, 0.34, -0.05]} rotation={[0, Math.PI, 0]} fontSize={0.2} color={index % 2 === 0 ? '#182019' : '#f8efd9'} anchorX="center" anchorY="middle">
+            {yardage}
+          </Text>
+        </group>
+      ))}
       <OrbitControls makeDefault enablePan={false} target={[0, 0.8, Math.max(3.2, totalZ * 0.62)]} maxPolarAngle={Math.PI / 2.08} />
     </>
   );
@@ -1339,6 +1461,31 @@ function ResultHud() {
   return null;
 }
 
+function CourseHud() {
+  const activeModule = useLabStore((state) => state.activeModule);
+  const impactInputs = useLabStore((state) => state.impactInputs);
+  const greenInputs = useLabStore((state) => state.greenInputs);
+  const shortInputs = useLabStore((state) => state.shortInputs);
+  if (activeModule === 'gained') return null;
+  const read = activeModule === 'impact'
+    ? `${impactInputs.targetDistanceYd} YDS`
+    : activeModule === 'green'
+      ? `${greenInputs.distanceFt} FT · ${greenInputs.stimp} STIMP`
+      : `${shortInputs.carryYd} YD · ${greenScenarioLabels[shortInputs.greenScenario]}`;
+  const condition = activeModule === 'green'
+    ? `${greenInputs.slopePercent}% ${compassLabel(greenInputs.slopeDirectionDeg)}`
+    : activeModule === 'short'
+      ? shortLieLabels[shortInputs.lie]
+      : 'CALM';
+  return (
+    <section className="course-hud" aria-label="course conditions">
+      <div><span>HOLE</span><strong>07</strong></div>
+      <div><span>PAR</span><strong>{activeModule === 'short' ? '3' : '4'}</strong></div>
+      <p><b>{read}</b><small>{condition}</small></p>
+    </section>
+  );
+}
+
 export function App() {
   const activeModule = useLabStore((state) => state.activeModule);
   const impactView = useLabStore((state) => state.impactView);
@@ -1362,6 +1509,7 @@ export function App() {
           <span>flightlab</span>
           <strong>{activeManifest?.title}</strong>
         </header>
+        <CourseHud />
         <ResultHud />
       </section>
       {activeModule === 'impact' ? <ImpactPanel /> : activeModule === 'green' ? <GreenPanel /> : activeModule === 'short' ? <ShortPanel /> : <PlaceholderPanel />}
