@@ -28,9 +28,11 @@ const compassLabels = ['N', 'NE', 'E', 'SE', 'S', 'SW', 'W', 'NW'];
 const parDefaults: Record<HolePar, number> = { par3: 165, par4: 440, par5: 560 };
 const ydToImpactScene = 0.15;
 const meterToYard = 1.0936133;
-const impactLateralEmphasis = 1.35;
+const impactLateralEmphasis = 1.6;
+const impactVerticalEmphasis = 1.55;
 const impactLateralYdScale = -ydToImpactScene * impactLateralEmphasis;
 const impactTrajectoryScale = ydToImpactScene * meterToYard;
+const impactTrajectoryVerticalScale = impactTrajectoryScale * impactVerticalEmphasis;
 const impactTrajectoryLateralScale = impactLateralYdScale * meterToYard;
 const fairwayWidthScene = 40 * ydToImpactScene;
 const targetGreenRadiusScene = 10 * ydToImpactScene;
@@ -115,7 +117,7 @@ const impactCameraViews: Record<ImpactView, { label: string }> = {
   top: { label: 'Top' },
   side: { label: 'Side' },
 };
-const impactCameraFov: Record<ImpactView, number> = { player: 56, top: 46, side: 50 };
+const impactCameraFov: Record<ImpactView, number> = { player: 59, top: 46, side: 50 };
 
 function compassLabel(degrees: number) {
   const normalized = ((degrees % 360) + 360) % 360;
@@ -465,9 +467,9 @@ function ImpactScene() {
         <meshStandardMaterial color="#2a3128" transparent opacity={0.42} roughness={0.82} />
       </mesh>
       {ghosts.map((ghost, index) => (
-        <Trajectory key={ghost.id} points={ghost.points} color="#ece4d3" opacity={0.26 - index * 0.025} scale={impactTrajectoryScale} lateralScale={impactTrajectoryLateralScale} width={2.6} />
+        <Trajectory key={ghost.id} points={ghost.points} color="#ece4d3" opacity={0.26 - index * 0.025} scale={impactTrajectoryScale} verticalScale={impactTrajectoryVerticalScale} lateralScale={impactTrajectoryLateralScale} width={2.6} />
       ))}
-      <Trajectory points={sampled} color="#e86f23" opacity={0.98} scale={impactTrajectoryScale} lateralScale={impactTrajectoryLateralScale} width={5.2} />
+      <Trajectory points={sampled} color="#e86f23" opacity={0.98} scale={impactTrajectoryScale} verticalScale={impactTrajectoryVerticalScale} lateralScale={impactTrajectoryLateralScale} width={5.2} />
       <mesh position={[landingX, 0.12, carryZ]} rotation-x={-Math.PI / 2} scale={[dispersionHalfX, dispersionDepth, 1]}>
         <ringGeometry args={[0.9, 1, 72]} />
         <meshBasicMaterial color="#f8efd9" transparent opacity={0.78} />
@@ -484,7 +486,7 @@ function ImpactScene() {
       <Text position={[0, 1.2, targetZ]} rotation-y={sceneTextRotationY} fontSize={1.55} color="#f8efd9" outlineWidth={0.055} outlineColor="#18231a">
         {inputs.holePar.replace('par', 'Par ')} · {inputs.targetDistanceYd} yd
       </Text>
-      <Text position={[result.offlineYd * visualLateralScale, Math.max(5, result.apexYd * ydToImpactScene + 1.5), carryZ * 0.48]} rotation-y={sceneTextRotationY} fontSize={1.65} color="#f5f0e4" outlineWidth={0.045} outlineColor="#18231a">
+      <Text position={[result.offlineYd * visualLateralScale, Math.max(5, result.apexYd * ydToImpactScene * impactVerticalEmphasis + 1.5), carryZ * 0.48]} rotation-y={sceneTextRotationY} fontSize={1.65} color="#f5f0e4" outlineWidth={0.045} outlineColor="#18231a">
         {flightLabel}
       </Text>
       {impactView === 'top' ? null : <OrbitControls makeDefault enablePan={false} target={cameraView.target} maxPolarAngle={cameraView.maxPolar} />}
@@ -498,6 +500,7 @@ function Trajectory({
   opacity,
   scale = 0.15,
   lateralScale = scale,
+  verticalScale = scale,
   width = 4,
   dashed = false,
 }: {
@@ -506,10 +509,11 @@ function Trajectory({
   opacity: number;
   scale?: number;
   lateralScale?: number;
+  verticalScale?: number;
   width?: number;
   dashed?: boolean;
 }) {
-  const scaled = useMemo(() => points.map((point) => [point[0] * lateralScale, point[1] * scale, point[2] * scale] as [number, number, number]), [points, scale, lateralScale]);
+  const scaled = useMemo(() => points.map((point) => [point[0] * lateralScale, point[1] * verticalScale, point[2] * scale] as [number, number, number]), [points, scale, lateralScale, verticalScale]);
   return (
     <Line points={scaled} color={color} lineWidth={width} transparent opacity={opacity} dashed={dashed} dashSize={0.42} gapSize={0.24} />
   );
