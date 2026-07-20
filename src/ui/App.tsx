@@ -732,7 +732,7 @@ function GreenScene() {
       </mesh>
       <Trajectory points={points} color="#e86f23" opacity={0.98} scale={1} width={5} />
       {result.made && rolloutPoints.length > 1 ? <Trajectory points={rolloutPoints} color="#f8efd9" opacity={0.78} scale={1} width={3.6} dashed /> : null}
-      {secondPuttPoints.length > 1 ? <Trajectory points={secondPuttPoints} color="#244136" opacity={0.78} scale={1} width={3.2} dashed /> : null}
+      {secondPuttPoints.length > 1 ? <Trajectory points={secondPuttPoints} color="#f6e6ad" opacity={0.96} scale={1} width={4.2} dashed /> : null}
       {secondPuttPoints.length > 1 ? (
         <mesh position={leavePoint}>
           <sphereGeometry args={[0.16, 24, 12]} />
@@ -793,7 +793,7 @@ function GreenPanel() {
       </section>
       <section className="leave-card" aria-label="second putt leave">
         <span>Second putt</span>
-        <strong>{nf.format(result.leave.distanceFt)} ft · {result.leave.slopeRead}</strong>
+        <strong>{nf.format(result.leave.distanceFt)} ft · {result.leave.slopeRead} · {nf.format(result.secondPuttReadFt)} ft read</strong>
         <p>{result.leave.heightRead}, {result.leave.sideRead}. Dashed line is the make line at {nf.format(result.secondPuttPacePastFt)} ft past speed and stops at the cup.</p>
       </section>
       <div className="readouts" aria-live="polite">

@@ -147,6 +147,7 @@ describe('simulateGreen', () => {
     const end = result.secondPuttPoints.at(-1)!.position;
 
     expect(lateralReadFt).toBeGreaterThan(1.45);
+    expect(result.secondPuttReadFt).toBeGreaterThan(0.25);
     expect(end[0]).toBeCloseTo(0, 6);
     expect(end[1]).toBeCloseTo(0, 6);
   });

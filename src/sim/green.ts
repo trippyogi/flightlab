@@ -28,6 +28,7 @@ export type GreenResult = {
   rolloutPoints: RollPoint[];
   secondPuttPoints: RollPoint[];
   secondPuttPacePastFt: number;
+  secondPuttReadFt: number;
   leave: GreenLeave;
   lipSpeedMs: number;
   captureRadiusM: number;
@@ -183,6 +184,20 @@ function makeLineSecondPutt({
   return bestPoints;
 }
 
+function initialAimRead(points: RollPoint[]) {
+  if (points.length < 2) return 0;
+  const start = points[0].position;
+  const end = points.at(-1)!.position;
+  const toCup: Vec2 = [end[0] - start[0], end[1] - start[1]];
+  const velocity = points[0].velocity;
+  const speed = Math.hypot(velocity[0], velocity[1]);
+  if (speed < 0.001) return 0;
+  const launchUnit: Vec2 = [velocity[0] / speed, velocity[1] / speed];
+  // Perpendicular distance between the cup and the initial start line: the
+  // practical amount a player must aim outside the hole before gravity turns it.
+  return Math.abs(toCup[0] * launchUnit[1] - toCup[1] * launchUnit[0]);
+}
+
 export function simulateGreen(inputs: GreenInputs): GreenResult {
   const target: Vec2 = [0, 0];
   const start: Vec2 = [0, -inputs.distanceFt * ftToM];
@@ -219,11 +234,13 @@ export function simulateGreen(inputs: GreenInputs): GreenResult {
     gravity,
     friction,
   });
+  const secondPuttReadFt = initialAimRead(secondPuttPoints) / ftToM;
   return {
     points,
     rolloutPoints,
     secondPuttPoints,
     secondPuttPacePastFt,
+    secondPuttReadFt,
     leave: {
       position: rolloutLast.position,
       distanceFt: leaveDistanceM / ftToM,
@@ -245,4 +262,4 @@ export function simulateGreen(inputs: GreenInputs): GreenResult {
   };
 }
 
-export const greenInternalsForTest = { frictionFromStimp, captureRadius, secondPuttPacePastFt, secondPuttReadGravityMultiplier };
+export const greenInternalsForTest = { frictionFromStimp, captureRadius, initialAimRead, secondPuttPacePastFt, secondPuttReadGravityMultiplier };
